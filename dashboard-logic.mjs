@@ -2,12 +2,19 @@ import { exerciseDataset } from "./data/exercises.mjs";
 import { foodDataset } from "./data/foods.mjs";
 
 const fallbackFoods = [
-  { name: "鸡胸肉米饭", calories: 680, protein: 52, carbs: 82, fat: 14 },
-  { name: "希腊酸奶碗", calories: 520, protein: 42, carbs: 55, fat: 12 },
-  { name: "乳清蛋白", calories: 120, protein: 24, carbs: 3, fat: 2 },
-  { name: "香蕉", calories: 105, protein: 1, carbs: 27, fat: 0 },
-  { name: "鸡蛋", calories: 144, protein: 12, carbs: 1, fat: 10 },
-  { name: "米饭", calories: 260, protein: 5, carbs: 58, fat: 1 }
+  { name: "乳清蛋白", calories: 400, protein: 80, carbs: 10, fat: 6, unit: "每100g" },
+  { name: "香蕉", calories: 93, protein: 1.4, carbs: 22, fat: 0.2, unit: "每100g" },
+  { name: "鸡蛋", calories: 143, protein: 12.1, carbs: 0.1, fat: 10.5, unit: "每100g" },
+  { name: "米饭", calories: 116, protein: 2.6, carbs: 25.9, fat: 0.3, unit: "每100g" }
+];
+
+const commonFoodAliases = [
+  { aliases: ["米饭", "熟米饭", "白米饭"], query: "米饭", defaultGrams: 150, units: { 碗: 150 } },
+  { aliases: ["鸡胸肉", "鸡胸"], query: "鸡胸脯肉", defaultGrams: 150, units: { 块: 150, 份: 150 } },
+  { aliases: ["鸡蛋"], query: "鸡蛋（煮）", defaultGrams: 50, units: { 个: 50, 颗: 50, 枚: 50 } },
+  { aliases: ["牛奶", "纯牛奶"], query: "纯牛奶（代表值，全脂）", defaultGrams: 250, units: { 杯: 250, 盒: 250 } },
+  { aliases: ["香蕉"], query: "香蕉 [甘蕉]", defaultGrams: 100, units: { 根: 100, 个: 100 } },
+  { aliases: ["乳清", "蛋白粉", "乳清蛋白"], query: "乳清蛋白", defaultGrams: 30, units: { 勺: 30 } }
 ];
 
 const fallbackExercises = [
@@ -181,22 +188,23 @@ export function generateWorkout({ parts, goal = "cut", seed = 0, maxExercises = 
 
 export function parseMeal(text) {
   const normalized = text || "";
-  const picked = [];
-  for (const food of foods) {
-    const canUseShortMatch = !food.source;
-    const shortName = food.name.slice(0, 2);
-    const matched = normalized.includes(food.name) || (canUseShortMatch && normalized.includes(shortName));
-    const isContainedByPicked = picked.some(item => item.name.includes(food.name) || (canUseShortMatch && item.name.includes(shortName)));
-    if (matched && !isContainedByPicked) picked.push(scaleFoodForText(food, normalized));
+  const picked = parseCommonFoods(normalized);
+  if (picked.length === 0) {
+    for (const food of fallbackFoods) {
+      const matched = normalized.includes(food.name);
+      const isContainedByPicked = picked.some(item => item.name.includes(food.name));
+      if (matched && !isContainedByPicked) picked.push(scaleFoodForText(food, normalized, food.name, { defaultGrams: 100 }));
+    }
   }
-  if (picked.length === 0) return { name: text || "自定义一餐", calories: 450, protein: 25, carbs: 50, fat: 14 };
+  if (picked.length === 0) return { name: text || "自定义一餐", calories: 450, protein: 25, carbs: 50, fat: 14, grams: 100 };
   return picked.reduce((sum, item) => ({
     name: sum.name ? `${sum.name} + ${item.name}` : item.name,
     calories: sum.calories + item.calories,
     protein: sum.protein + item.protein,
     carbs: sum.carbs + item.carbs,
-    fat: sum.fat + item.fat
-  }), { name: "", calories: 0, protein: 0, carbs: 0, fat: 0 });
+    fat: sum.fat + item.fat,
+    grams: sum.grams + (item.grams || 0)
+  }), { name: "", calories: 0, protein: 0, carbs: 0, fat: 0, grams: 0 });
 }
 
 export function searchFoods(query, limit = 8) {
@@ -228,15 +236,42 @@ export function foodEntry(food, grams) {
   };
 }
 
-function scaleFoodForText(food, text) {
-  const escapedName = food.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const shortName = food.name.slice(0, 2).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const amountMatch = text.match(new RegExp(`(?:${escapedName}|${shortName})[^\\d]*(\\d+(?:\\.\\d+)?)\\s*(克|g|斤|两)?`, "i"))
-    || text.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(克|g|斤|两)?[^，。；,.]*?(?:${escapedName}|${shortName})`, "i"));
-  if (!amountMatch) return food;
-  const amount = Number(amountMatch[1]);
-  const unit = amountMatch[2] || "克";
-  const grams = unit === "斤" ? amount * 500 : unit === "两" ? amount * 50 : amount;
+function foodByQuery(query) {
+  return searchFoods(query, 1)[0]
+    || foodDataset.find(food => food.name === query)
+    || foodDataset.find(food => food.name.includes(query))
+    || fallbackFoods.find(food => food.name === query || food.name.includes(query));
+}
+
+function parseCommonFoods(text) {
+  const picked = [];
+  for (const spec of commonFoodAliases) {
+    const alias = spec.aliases.find(item => text.includes(item));
+    if (!alias) continue;
+    if (picked.some(item => spec.aliases.some(name => item.name.includes(name)))) continue;
+    const food = foodByQuery(spec.query);
+    if (!food) continue;
+    picked.push(scaleFoodForText(food, text, alias, spec));
+  }
+  return picked;
+}
+
+function scaleFoodForText(food, text, alias = food.name, spec = {}) {
+  const scopedText = text.split(/[，。；,.;、]|和|与|及|加/).find(chunk => chunk.includes(alias)) || text;
+  const escapedName = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const units = ["克", "g", "斤", "两", ...Object.keys(spec.units || {})].join("|");
+  const amountMatch = scopedText.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(${units})?[^\\d一二两三四五六七八九十半]*?(?:${escapedName})`, "i"))
+    || scopedText.match(new RegExp(`([一二两三四五六七八九十半]+)\\s*(${units})[^\\d一二两三四五六七八九十半]*?(?:${escapedName})`, "i"))
+    || scopedText.match(new RegExp(`(?:${escapedName})[^\\d一二两三四五六七八九十半]*(\\d+(?:\\.\\d+)?)\\s*(${units})?`, "i"))
+    || scopedText.match(new RegExp(`(?:${escapedName})[^\\d一二两三四五六七八九十半]*([一二两三四五六七八九十半]+)\\s*(${units})`, "i"));
+  const amount = amountMatch ? chineseNumber(amountMatch[1]) : null;
+  const unit = amountMatch?.[2] || "克";
+  const grams = amount === null
+    ? (spec.defaultGrams || 100)
+    : unit === "斤" ? amount * 500
+      : unit === "两" ? amount * 50
+        : spec.units?.[unit] ? amount * spec.units[unit]
+          : amount;
   const scale = grams / 100;
   return {
     ...food,
@@ -244,8 +279,24 @@ function scaleFoodForText(food, text) {
     calories: Math.round(food.calories * scale),
     protein: Math.round(food.protein * scale * 10) / 10,
     carbs: Math.round(food.carbs * scale * 10) / 10,
-    fat: Math.round(food.fat * scale * 10) / 10
+    fat: Math.round(food.fat * scale * 10) / 10,
+    grams
   };
+}
+
+function chineseNumber(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const numeric = Number(value);
+  if (Number.isFinite(numeric)) return numeric;
+  const text = String(value);
+  if (text === "半") return 0.5;
+  const digits = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+  if (text === "十") return 10;
+  if (text.includes("十")) {
+    const [left, right] = text.split("十");
+    return (left ? digits[left] || 0 : 1) * 10 + (right ? digits[right] || 0 : 0);
+  }
+  return digits[text] ?? null;
 }
 
 export function totals(meals) {

@@ -26,13 +26,21 @@ assert.equal(chestBackWorkout.some(exercise => exercise.name === "坐姿划船" 
 assert.equal(chestBackWorkout.every(exercise => exercise.sets.length === 4), true);
 assert.equal(chestBackWorkout.every(exercise => exercise.media?.gif), true);
 
-const meal = parseMeal("午餐吃了鸡胸肉米饭和乳清蛋白");
-assert.equal(meal.calories, 800);
-assert.equal(meal.protein, 76);
+const meal = parseMeal("午餐吃了150克鸡胸肉和30克乳清蛋白");
+assert.equal(meal.calories > 290 && meal.calories < 310, true);
+assert.equal(meal.protein > 51 && meal.protein < 53, true);
 
-const weightedMeal = parseMeal("午餐吃了200克鸡胸肉米饭");
-assert.equal(weightedMeal.calories, 1360);
-assert.equal(weightedMeal.protein, 104);
+const riceMeal = parseMeal("500g米饭");
+assert.equal(riceMeal.name, "米饭（蒸，代表值） 500g");
+assert.equal(riceMeal.calories, 580);
+assert.equal(riceMeal.carbs, 129.5);
+
+const spokenMeal = parseMeal("早餐两个鸡蛋，一杯牛奶；中午200克米饭和150克鸡胸肉");
+assert.match(spokenMeal.name, /鸡蛋（煮） 100g/);
+assert.match(spokenMeal.name, /纯牛奶（代表值，全脂） 250g/);
+assert.match(spokenMeal.name, /米饭（蒸，代表值） 200g/);
+assert.match(spokenMeal.name, /鸡胸脯肉 150g/);
+assert.equal(spokenMeal.carbs > 64 && spokenMeal.carbs < 66, true);
 
 const chickenSearch = searchFoods("鸡", 5);
 assert.equal(chickenSearch.length, 5);
@@ -46,8 +54,8 @@ assert.equal(chickenEntry.carbs, 1.8);
 assert.equal(chickenEntry.fat, 13.4);
 
 const day = totals([meal, { name: "香蕉", calories: 105, protein: 1, carbs: 27, fat: 0 }]);
-assert.equal(day.calories, 905);
-assert.equal(day.protein, 77);
+assert.equal(day.calories, meal.calories + 105);
+assert.equal(day.protein, Math.round((meal.protein + 1) * 10) / 10);
 
 assert.equal(workoutVolume([{ weight: 26, reps: 9 }, { weight: 26, reps: 8 }]), 442);
 
@@ -60,9 +68,9 @@ const summary = dailySummary({
 });
 assert.equal(summary.date, "2026-07-19");
 assert.equal(summary.weight, 75.8);
-assert.equal(summary.calories, 800);
-assert.equal(summary.calorieGap, target.calories - 800);
-assert.equal(summary.proteinGap, target.protein - 76);
+assert.equal(summary.calories, meal.calories);
+assert.equal(summary.calorieGap, target.calories - meal.calories);
+assert.equal(summary.proteinGap, target.protein - meal.protein);
 assert.equal(summary.volume, 442);
 assert.equal(summary.steps, 8200);
 assert.equal(summary.sleep, 7.2);
