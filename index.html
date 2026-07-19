@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GymPlate</title>
+    <meta http-equiv="refresh" content="0; url=dashboard.html">
+    <style>
+      body {
+        display: grid;
+        min-height: 100vh;
+        margin: 0;
+        place-items: center;
+        color: #101218;
+        background: #f3f5f8;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Segoe UI", sans-serif;
+      }
+
+      a {
+        color: #2f80ed;
+        font-weight: 800;
+      }
+    </style>
+    <script>
+      location.replace("dashboard.html" + location.hash);
+    </script>
+  </head>
+  <body>
+    <p>正在打开 GymPlate 仪表盘。若没有自动跳转，请进入 <a href="dashboard.html">dashboard.html</a>。</p>
+  </body>
+</html>

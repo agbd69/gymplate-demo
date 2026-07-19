@@ -1,0 +1,10 @@
+{
+  "name": "gymplate-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "import:data": "node scripts/import-open-data.mjs",
+    "test": "node tests/open-data.test.mjs && node tests/dashboard-logic.test.mjs && node tests/dashboard-page.test.mjs"
+  }
+}
