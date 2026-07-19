@@ -595,9 +595,17 @@
 
       .setup-panel {
         display: grid;
-        grid-template-columns: repeat(6, minmax(110px, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
         margin-bottom: 16px;
+      }
+
+      .profile-setup {
+        margin-top: 0;
+      }
+
+      .compact-setup {
+        align-items: end;
       }
 
       .setup-panel label {
@@ -612,13 +620,80 @@
       .setup-panel select,
       .meal-input input {
         width: 100%;
-        min-height: 40px;
+        min-height: 44px;
         border: 1px solid var(--line);
         border-radius: 12px;
         padding: 0 10px;
         color: var(--ink);
         outline: 0;
         background: #fff;
+      }
+
+      .date-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: end;
+      }
+
+      .date-row label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .date-row input {
+        width: 100%;
+        min-height: 44px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 0 10px;
+        color: var(--ink);
+        font: inherit;
+        font-weight: 850;
+        outline: 0;
+        background: #fff;
+      }
+
+      .date-row .btn {
+        min-height: 44px;
+        white-space: nowrap;
+      }
+
+      .weekdays-picker {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+      }
+
+      .weekdays-picker label {
+        position: relative;
+      }
+
+      .weekdays-picker input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .weekdays-picker span {
+        display: grid;
+        min-height: 38px;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: #626873;
+        font-size: 13px;
+        font-weight: 900;
+        background: #fff;
+      }
+
+      .weekdays-picker input:checked + span {
+        border-color: #111318;
+        color: #fff;
+        background: #111318;
       }
 
       .meal-input {
@@ -793,10 +868,21 @@
       }
 
       @media (max-width: 380px) {
-        .setup-panel,
         .checkin-grid,
         .summary-grid {
           grid-template-columns: 1fr;
+        }
+
+        .profile-setup {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .date-row {
+          grid-template-columns: 1fr;
+        }
+
+        .date-row .btn {
+          width: 100%;
         }
 
         .set-row {
@@ -845,23 +931,22 @@
           <section class="card">
             <div class="section-head">
               <div>
-                <span class="label">日期</span>
-                <h2>选择记录日</h2>
+                <span class="label">今日设置</span>
+                <h2>身体与目标</h2>
               </div>
-              <button id="saveWeekPlan" class="btn dark">生成固定周计划</button>
             </div>
-            <div class="setup-panel" style="margin-bottom:0">
+            <div class="date-row">
               <label>当前日期<input id="activeDateInput" type="date"></label>
+              <button id="saveWeekPlan" class="btn dark">生成周计划</button>
             </div>
-          </section>
-
-          <section class="card setup-panel" aria-label="身体数据设置">
-            <label>身高 cm<input id="heightInput" type="number" value="178"></label>
-            <label>体重 kg<input id="weightInput" type="number" value="76"></label>
-            <label>年龄<input id="ageInput" type="number" value="30"></label>
-            <label>性别<select id="sexInput"><option value="male">男</option><option value="female">女</option></select></label>
-            <label>目标<select id="goalInput"><option value="cut">减脂</option><option value="maintain">维持</option><option value="bulk">增肌</option></select></label>
-            <label>每周训练<input id="daysInput" type="number" min="3" max="5" value="4"></label>
+            <div class="setup-panel profile-setup" aria-label="身体数据设置">
+              <label>身高 cm<input id="heightInput" type="number" value="178"></label>
+              <label>体重 kg<input id="weightInput" type="number" value="76"></label>
+              <label>年龄<input id="ageInput" type="number" value="30"></label>
+              <label>性别<select id="sexInput"><option value="male">男</option><option value="female">女</option></select></label>
+              <label>目标<select id="goalInput"><option value="cut">减脂</option><option value="maintain">维持</option><option value="bulk">增肌</option></select></label>
+              <label>每周训练<input id="daysInput" type="number" min="3" max="5" value="4"></label>
+            </div>
           </section>
 
           <section class="card" style="margin-top:16px">
@@ -881,17 +966,17 @@
               <label><input type="checkbox" value="核心"><span>核心</span></label>
             </div>
             <p id="generatorHint" class="label">会根据目标和部位，从动作库里重新组合动作、组数和次数范围。</p>
-            <div class="setup-panel" style="margin-top:14px;margin-bottom:0">
-              <label>训练日
-                <select id="trainingWeekdays" multiple size="5">
-                  <option value="1" selected>周一</option>
-                  <option value="2">周二</option>
-                  <option value="3" selected>周三</option>
-                  <option value="4">周四</option>
-                  <option value="5" selected>周五</option>
-                  <option value="6">周六</option>
-                  <option value="7">周日</option>
-                </select>
+            <div class="setup-panel compact-setup" style="margin-top:14px;margin-bottom:0">
+              <label style="grid-column:1/-1">训练日
+                <div id="trainingWeekdays" class="weekdays-picker">
+                  <label><input type="checkbox" value="1" checked><span>一</span></label>
+                  <label><input type="checkbox" value="2"><span>二</span></label>
+                  <label><input type="checkbox" value="3" checked><span>三</span></label>
+                  <label><input type="checkbox" value="4"><span>四</span></label>
+                  <label><input type="checkbox" value="5" checked><span>五</span></label>
+                  <label><input type="checkbox" value="6"><span>六</span></label>
+                  <label><input type="checkbox" value="7"><span>日</span></label>
+                </div>
               </label>
               <label>每天动作数<input id="exercisesPerDayInput" type="number" min="2" max="8" value="4"></label>
               <label>每动作组数<input id="setsPerExerciseInput" type="number" min="2" max="8" value="3"></label>
@@ -1196,9 +1281,9 @@
         $("#daysInput").value = state.profile.trainingDays;
         $("#exercisesPerDayInput").value = state.planConfig?.exercisesPerDay || 4;
         $("#setsPerExerciseInput").value = state.planConfig?.setsPerExercise || (state.profile.goal === "bulk" ? 4 : 3);
-        document.querySelectorAll("#trainingWeekdays option").forEach(option => {
+        document.querySelectorAll("#trainingWeekdays input").forEach(option => {
           const selected = state.planConfig?.trainingWeekdays || [1, 3, 5].slice(0, state.profile.trainingDays);
-          option.selected = selected.includes(Number(option.value));
+          option.checked = selected.includes(Number(option.value));
         });
         $("#dailyWeightInput").value = state.checkin.weight || state.profile.weight;
         $("#dailyStepsInput").value = state.checkin.steps || 0;
@@ -1581,7 +1666,7 @@
         render();
       };
       $("#saveWeekPlan").onclick = () => {
-        const trainingWeekdays = [...document.querySelectorAll("#trainingWeekdays option:checked")].map(option => Number(option.value));
+        const trainingWeekdays = [...document.querySelectorAll("#trainingWeekdays input:checked")].map(option => Number(option.value));
         state.planConfig = {
           trainingWeekdays: trainingWeekdays.length ? trainingWeekdays : [1, 3, 5].slice(0, state.profile.trainingDays),
           exercisesPerDay: Math.max(Number($("#exercisesPerDayInput").value) || 4, 1),
