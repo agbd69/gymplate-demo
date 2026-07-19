@@ -766,6 +766,7 @@
 
       .single-meal-actions select,
       .preset-row select,
+      .preset-row input,
       .macro-editor-grid input {
         width: 100%;
         min-width: 0;
@@ -869,6 +870,10 @@
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         gap: 8px;
+      }
+
+      .preset-save-row {
+        grid-template-columns: minmax(0, 1fr) auto auto;
       }
 
       .meal-item {
@@ -1415,6 +1420,8 @@
         history: [],
         seed: 1,
         selectedExercise: "bench",
+        customMealPresets: [],
+        defaultMealPresetBySlot: {},
         weights: [77.8, 77.2, 76.9, 76.6, 76.1, 75.9, 75.8],
         calories: [2350, 2200, 2150, 2260, 2100, 2180, 0]
       };
@@ -1426,21 +1433,21 @@
         { id: "lunch", label: "午餐", note: "通常是主碳水和主蛋白。" },
         { id: "dinner", label: "晚餐", note: "按训练日和饥饿感调整。" }
       ];
-      const mealPresets = [
-        { id: "breakfast-eggs-milk", slot: "breakfast", name: "鸡蛋牛奶早餐", texts: ["100克鸡蛋", "250克牛奶", "30克乳清蛋白"] },
-        { id: "breakfast-light", slot: "breakfast", name: "轻早餐", texts: ["50克鸡蛋", "100克香蕉"] },
-        { id: "lunch-rice-chicken", slot: "lunch", name: "米饭鸡胸午餐", texts: ["500克米饭", "150克鸡胸肉"] },
-        { id: "lunch-cut", slot: "lunch", name: "减脂午餐", texts: ["300克米饭", "180克鸡胸肉"] },
-        { id: "dinner-light", slot: "dinner", name: "轻晚餐", texts: ["300克米饭", "100克鸡蛋"] },
-        { id: "dinner-training", slot: "dinner", name: "训练日晚餐", texts: ["400克米饭", "150克鸡胸肉", "250克牛奶"] }
+      const starterMealPresets = [
+        { id: "template-breakfast-eggs-milk", slot: "breakfast", name: "示例：鸡蛋牛奶早餐", source: "template", texts: ["100克鸡蛋", "250克牛奶", "30克乳清蛋白"] },
+        { id: "template-breakfast-light", slot: "breakfast", name: "示例：轻早餐", source: "template", texts: ["50克鸡蛋", "100克香蕉"] },
+        { id: "template-lunch-rice-chicken", slot: "lunch", name: "示例：米饭鸡胸午餐", source: "template", texts: ["500克米饭", "150克鸡胸肉"] },
+        { id: "template-lunch-cut", slot: "lunch", name: "示例：减脂午餐", source: "template", texts: ["300克米饭", "180克鸡胸肉"] },
+        { id: "template-dinner-light", slot: "dinner", name: "示例：轻晚餐", source: "template", texts: ["300克米饭", "100克鸡蛋"] },
+        { id: "template-dinner-training", slot: "dinner", name: "示例：训练日晚餐", source: "template", texts: ["400克米饭", "150克鸡胸肉", "250克牛奶"] }
       ];
-      const defaultPresetIds = ["breakfast-eggs-milk", "lunch-rice-chicken", "dinner-light"];
       function save() { localStorage.setItem(key, JSON.stringify(state)); }
       function restore() {
         try {
           const saved = JSON.parse(localStorage.getItem(key) || localStorage.getItem("gymplate-dashboard-state-v2") || "null");
           if (saved?.profile) Object.assign(state, saved);
           migrateDemoMeals();
+          migrateOldPresetMeals();
           migrateMealEntries();
         } catch {}
       }
@@ -1454,7 +1461,19 @@
           }
         });
       }
+      function migrateOldPresetMeals() {
+        const oldPresetIds = new Set(["breakfast-eggs-milk", "breakfast-light", "lunch-rice-chicken", "lunch-cut", "dinner-light", "dinner-training"]);
+        const onlyOldPresets = meals => meals?.length && meals.every(meal => oldPresetIds.has(meal.presetId));
+        if (onlyOldPresets(state.meals) && !state.records?.[state.activeDate]?.settled) state.meals = [];
+        Object.entries(state.records || {}).forEach(([date, record]) => {
+          if (onlyOldPresets(record.meals) && !record.settled) {
+            state.records[date] = { ...record, meals: [] };
+          }
+        });
+      }
       function migrateMealEntries() {
+        state.customMealPresets = Array.isArray(state.customMealPresets) ? state.customMealPresets : [];
+        state.defaultMealPresetBySlot = state.defaultMealPresetBySlot || {};
         state.meals = (state.meals || []).map((meal, index) => mealWithMeta(meal, meal.slot || "lunch", index));
         Object.entries(state.records || {}).forEach(([date, record]) => {
           state.records[date] = {
@@ -1481,18 +1500,45 @@
           fat: roundMacro(meal.fat)
         };
       }
+      function allMealPresets() {
+        return [...(state.customMealPresets || []), ...starterMealPresets];
+      }
       function presetEntries(preset) {
+        if (preset.items?.length) {
+          return preset.items.map((meal, index) => mealWithMeta({ ...meal, id: null }, preset.slot, index, preset));
+        }
         return preset.texts.map((text, index) => mealWithMeta(parseMeal(text), preset.slot, index, preset));
       }
       function addPresetMeals(presetId, replaceSlot = false) {
-        const preset = mealPresets.find(item => item.id === presetId);
+        const preset = allMealPresets().find(item => item.id === presetId);
         if (!preset) return;
         if (replaceSlot) state.meals = state.meals.filter(meal => meal.slot !== preset.slot);
         state.meals.push(...presetEntries(preset));
       }
+      function saveSlotAsPreset(slotId, makeDefault = false) {
+        const meals = state.meals.filter(meal => (meal.slot || "lunch") === slotId);
+        if (!meals.length) return false;
+        const input = document.querySelector(`[data-preset-name="${slotId}"]`);
+        const slot = mealSlots.find(item => item.id === slotId);
+        const name = (input?.value || "").trim() || `我的${slot?.label || "餐"}组合`;
+        const id = `user-${slotId}-${Date.now()}`;
+        const preset = {
+          id,
+          slot: slotId,
+          name: `我的：${name}`,
+          source: "user",
+          items: meals.map(({ id, slot, presetId, presetName, ...meal }) => ({ ...meal }))
+        };
+        state.customMealPresets = [...(state.customMealPresets || []).filter(item => !(item.slot === slotId && item.name === preset.name)), preset];
+        if (makeDefault) state.defaultMealPresetBySlot[slotId] = id;
+        if (input) input.value = "";
+        save();
+        return true;
+      }
       function defaultDailyMeals() {
-        return defaultPresetIds.flatMap(id => {
-          const preset = mealPresets.find(item => item.id === id);
+        return mealSlots.flatMap(slot => {
+          const presetId = state.defaultMealPresetBySlot?.[slot.id];
+          const preset = allMealPresets().find(item => item.id === presetId);
           return preset ? presetEntries(preset) : [];
         });
       }
@@ -1735,13 +1781,16 @@
         $("#mealList").innerHTML = mealSlots.map(slot => {
           const meals = grouped[slot.id] || [];
           const slotTotal = totals(meals);
-          const presets = mealPresets.filter(preset => preset.slot === slot.id);
+          const customPresets = (state.customMealPresets || []).filter(preset => preset.slot === slot.id);
+          const templatePresets = starterMealPresets.filter(preset => preset.slot === slot.id);
+          const presets = [...customPresets, ...templatePresets];
+          const defaultPresetName = allMealPresets().find(preset => preset.id === state.defaultMealPresetBySlot?.[slot.id])?.name || "未设置默认";
           return `
             <section class="meal-slot-card" data-meal-slot="${slot.id}">
               <div class="meal-slot-head">
                 <div>
                   <strong>${slot.label}</strong>
-                  <p>${slot.note}</p>
+                  <p>${slot.note} 默认：${h(defaultPresetName)}</p>
                 </div>
                 <span class="pill">${slotTotal.calories} kcal</span>
               </div>
@@ -1750,7 +1799,12 @@
                   <select data-preset-select="${slot.id}" aria-label="${slot.label}常用餐组合">
                     ${presets.map(preset => `<option value="${preset.id}">${h(preset.name)}</option>`).join("")}
                   </select>
-                  <button class="btn soft" data-add-preset-slot="${slot.id}">添加组合</button>
+                  <button class="btn soft" data-add-preset-slot="${slot.id}">加入选中</button>
+                </div>
+                <div class="preset-row preset-save-row">
+                  <input data-preset-name="${slot.id}" placeholder="保存为我的常用餐，例如：工作日${slot.label}" aria-label="${slot.label}常用餐名称">
+                  <button class="btn soft" data-save-preset-slot="${slot.id}">保存常用</button>
+                  <button class="btn dark" data-default-preset-slot="${slot.id}">设默认</button>
                 </div>
                 ${meals.length ? meals.map((meal, index) => {
                   const mealIndex = state.meals.indexOf(meal);
@@ -1791,6 +1845,20 @@
           button.onclick = () => {
             const select = document.querySelector(`[data-preset-select="${button.dataset.addPresetSlot}"]`);
             addPresetMeals(select?.value);
+            saveDay();
+            render();
+          };
+        });
+        document.querySelectorAll("[data-save-preset-slot]").forEach(button => {
+          button.onclick = () => {
+            if (!saveSlotAsPreset(button.dataset.savePresetSlot, false)) return;
+            saveDay();
+            render();
+          };
+        });
+        document.querySelectorAll("[data-default-preset-slot]").forEach(button => {
+          button.onclick = () => {
+            if (!saveSlotAsPreset(button.dataset.defaultPresetSlot, true)) return;
             saveDay();
             render();
           };
