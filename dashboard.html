@@ -760,8 +760,24 @@
 
       .single-meal-actions {
         display: grid;
-        grid-template-columns: .8fr 1.2fr;
+        grid-template-columns: minmax(0, .9fr) minmax(0, .8fr) minmax(0, 1.1fr);
         gap: 8px;
+      }
+
+      .single-meal-actions select,
+      .preset-row select,
+      .macro-editor-grid input {
+        width: 100%;
+        min-width: 0;
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 0 10px;
+        color: var(--ink);
+        font: inherit;
+        font-weight: 850;
+        outline: 0;
+        background: #fff;
       }
 
       .meal-review {
@@ -799,6 +815,125 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 8px;
+      }
+
+      .meal-slots {
+        gap: 12px;
+      }
+
+      .meal-slot-card {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: #fff;
+      }
+
+      .meal-slot-head {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: start;
+        padding: 14px;
+        background: #f8f9fb;
+      }
+
+      .meal-slot-head strong {
+        display: block;
+        font-size: 18px;
+      }
+
+      .meal-slot-head p {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .meal-slot-body {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .meal-empty {
+        border: 1px dashed var(--line);
+        border-radius: 16px;
+        padding: 12px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 800;
+        background: #fbfcfe;
+      }
+
+      .preset-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+      }
+
+      .meal-item {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 12px;
+        background: #fff;
+      }
+
+      .meal-item-top {
+        display: grid;
+        grid-template-columns: 38px minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .meal-item-top strong,
+      .meal-item-top p {
+        overflow-wrap: anywhere;
+      }
+
+      .meal-item-top p {
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .meal-item .badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 13px;
+        font-size: 12px;
+      }
+
+      .macro-editor {
+        margin-top: 10px;
+      }
+
+      .macro-editor summary {
+        color: #555b66;
+        font-size: 12px;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      .macro-editor-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .macro-editor-grid label {
+        display: grid;
+        gap: 5px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+      }
+
+      .macro-editor-grid input {
+        min-height: 36px;
+        border-radius: 10px;
+        padding: 0 7px;
+        font-weight: 800;
       }
 
       .food-results {
@@ -928,7 +1063,8 @@
 
       @media (max-width: 380px) {
         .checkin-grid,
-        .summary-grid {
+        .summary-grid,
+        .macro-editor-grid {
           grid-template-columns: 1fr;
         }
 
@@ -942,6 +1078,11 @@
 
         .date-row .btn {
           width: 100%;
+        }
+
+        .single-meal-actions,
+        .preset-row {
+          grid-template-columns: 1fr;
         }
 
         .set-row {
@@ -1103,13 +1244,18 @@
               <div class="single-meal-box">
                 <textarea id="aiMealText" rows="4" placeholder="例如：早餐两个鸡蛋，一杯牛奶；中午200克米饭和150克鸡胸肉" aria-label="口述饮食"></textarea>
                 <div class="single-meal-actions">
+                  <select id="mealSlotInput" aria-label="餐次">
+                    <option value="breakfast">早餐</option>
+                    <option value="lunch" selected>午餐</option>
+                    <option value="dinner">晚餐</option>
+                  </select>
                   <button id="addMealButton" class="btn soft">语音</button>
                   <button id="aiParseMeal" class="btn primary">解析饮食</button>
                 </div>
               </div>
               <p class="label" id="aiMealHint">只需要像聊天一样描述一餐。本地版会先用中文食物库估算，接入 API 后会用 AI 解析。</p>
               <div id="mealReview" class="meal-review"></div>
-              <div id="mealList" class="meal-list" style="margin-top:14px"></div>
+              <div id="mealList" class="meal-list meal-slots" style="margin-top:14px"></div>
             </article>
           </section>
         </section>
@@ -1275,12 +1421,27 @@
 
       function $(selector) { return document.querySelector(selector); }
       function h(value) { return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char])); }
+      const mealSlots = [
+        { id: "breakfast", label: "早餐", note: "起床后默认这组，没吃就删掉。" },
+        { id: "lunch", label: "午餐", note: "通常是主碳水和主蛋白。" },
+        { id: "dinner", label: "晚餐", note: "按训练日和饥饿感调整。" }
+      ];
+      const mealPresets = [
+        { id: "breakfast-eggs-milk", slot: "breakfast", name: "鸡蛋牛奶早餐", texts: ["100克鸡蛋", "250克牛奶", "30克乳清蛋白"] },
+        { id: "breakfast-light", slot: "breakfast", name: "轻早餐", texts: ["50克鸡蛋", "100克香蕉"] },
+        { id: "lunch-rice-chicken", slot: "lunch", name: "米饭鸡胸午餐", texts: ["500克米饭", "150克鸡胸肉"] },
+        { id: "lunch-cut", slot: "lunch", name: "减脂午餐", texts: ["300克米饭", "180克鸡胸肉"] },
+        { id: "dinner-light", slot: "dinner", name: "轻晚餐", texts: ["300克米饭", "100克鸡蛋"] },
+        { id: "dinner-training", slot: "dinner", name: "训练日晚餐", texts: ["400克米饭", "150克鸡胸肉", "250克牛奶"] }
+      ];
+      const defaultPresetIds = ["breakfast-eggs-milk", "lunch-rice-chicken", "dinner-light"];
       function save() { localStorage.setItem(key, JSON.stringify(state)); }
       function restore() {
         try {
           const saved = JSON.parse(localStorage.getItem(key) || localStorage.getItem("gymplate-dashboard-state-v2") || "null");
           if (saved?.profile) Object.assign(state, saved);
           migrateDemoMeals();
+          migrateMealEntries();
         } catch {}
       }
       function migrateDemoMeals() {
@@ -1291,6 +1452,48 @@
           if (record.meals?.length && record.meals.every(isDemoMeal) && !record.settled) {
             state.records[date] = { ...record, meals: [] };
           }
+        });
+      }
+      function migrateMealEntries() {
+        state.meals = (state.meals || []).map((meal, index) => mealWithMeta(meal, meal.slot || "lunch", index));
+        Object.entries(state.records || {}).forEach(([date, record]) => {
+          state.records[date] = {
+            ...record,
+            meals: (record.meals || []).map((meal, index) => mealWithMeta(meal, meal.slot || "lunch", index))
+          };
+        });
+      }
+      function roundMacro(value) {
+        return Math.round((Number(value) || 0) * 10) / 10;
+      }
+      function mealWithMeta(meal, slot = "lunch", index = 0, preset = null) {
+        return {
+          id: meal.id || `${slot}-${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`,
+          slot,
+          presetId: meal.presetId || preset?.id || "custom",
+          presetName: meal.presetName || preset?.name || "手动记录",
+          name: meal.name || "食物",
+          grams: Math.max(Number(meal.grams) || 100, 1),
+          unit: meal.unit || "",
+          calories: Math.round(Number(meal.calories) || 0),
+          protein: roundMacro(meal.protein),
+          carbs: roundMacro(meal.carbs),
+          fat: roundMacro(meal.fat)
+        };
+      }
+      function presetEntries(preset) {
+        return preset.texts.map((text, index) => mealWithMeta(parseMeal(text), preset.slot, index, preset));
+      }
+      function addPresetMeals(presetId, replaceSlot = false) {
+        const preset = mealPresets.find(item => item.id === presetId);
+        if (!preset) return;
+        if (replaceSlot) state.meals = state.meals.filter(meal => meal.slot !== preset.slot);
+        state.meals.push(...presetEntries(preset));
+      }
+      function defaultDailyMeals() {
+        return defaultPresetIds.flatMap(id => {
+          const preset = mealPresets.find(item => item.id === id);
+          return preset ? presetEntries(preset) : [];
         });
       }
       function saveDay() {
@@ -1305,8 +1508,9 @@
       }
       function loadDay(date) {
         state.activeDate = date;
+        const savedRecord = state.records?.[date];
         const day = dayState(state.records, date, { weight: state.profile.weight, steps: 0, sleep: 0, mood: "" });
-        state.meals = day.meals;
+        state.meals = savedRecord ? day.meals.map((meal, index) => mealWithMeta(meal, meal.slot || "lunch", index)) : defaultDailyMeals();
         state.completed = day.completed;
         state.workout = day.workout;
         state.checkin = day.checkin;
@@ -1434,9 +1638,9 @@
       function renderBars(total, target) {
         const rows = [
           ["热量", total.calories, target.calories, "", "var(--blue)"],
-          ["蛋白质", total.protein, target.protein, "g", "var(--red)"],
-          ["碳水", total.carbs, target.carbs, "g", "var(--green)"],
-          ["脂肪", total.fat, target.fat, "g", "var(--orange)"]
+          ["蛋白质", roundMacro(total.protein), target.protein, "g", "var(--red)"],
+          ["碳水", roundMacro(total.carbs), target.carbs, "g", "var(--green)"],
+          ["脂肪", roundMacro(total.fat), target.fat, "g", "var(--orange)"]
         ];
         $("#macroBars").innerHTML = rows.map(([label, value, max, unit, color]) => `
           <div class="bar-row">
@@ -1527,20 +1731,76 @@
         });
       }
       function renderMeals() {
-        if (!state.meals.length) {
-          $("#mealList").innerHTML = `<div class="meal"><span class="badge blue">+</span><div><strong>还没有记录饮食</strong><p>描述一餐后再点记录，才会计入今日热量。</p></div><span class="pill">0 kcal</span></div>`;
-          return;
-        }
-        $("#mealList").innerHTML = state.meals.map((meal, index) => `
-          <div class="meal">
-            <span class="badge ${colors[index % colors.length]}">${index + 1}</span>
-            <div><strong>${h(meal.name)}</strong><p>${meal.calories} kcal · ${meal.protein}P ${meal.carbs}C ${meal.fat}F${meal.unit ? ` · ${h(meal.unit)}` : ""}</p></div>
-            <button class="pill" data-remove-meal="${index}">删除</button>
-          </div>
-        `).join("");
+        const grouped = Object.fromEntries(mealSlots.map(slot => [slot.id, state.meals.filter(meal => (meal.slot || "lunch") === slot.id)]));
+        $("#mealList").innerHTML = mealSlots.map(slot => {
+          const meals = grouped[slot.id] || [];
+          const slotTotal = totals(meals);
+          const presets = mealPresets.filter(preset => preset.slot === slot.id);
+          return `
+            <section class="meal-slot-card" data-meal-slot="${slot.id}">
+              <div class="meal-slot-head">
+                <div>
+                  <strong>${slot.label}</strong>
+                  <p>${slot.note}</p>
+                </div>
+                <span class="pill">${slotTotal.calories} kcal</span>
+              </div>
+              <div class="meal-slot-body">
+                <div class="preset-row">
+                  <select data-preset-select="${slot.id}" aria-label="${slot.label}常用餐组合">
+                    ${presets.map(preset => `<option value="${preset.id}">${h(preset.name)}</option>`).join("")}
+                  </select>
+                  <button class="btn soft" data-add-preset-slot="${slot.id}">添加组合</button>
+                </div>
+                ${meals.length ? meals.map((meal, index) => {
+                  const mealIndex = state.meals.indexOf(meal);
+                  return `
+                    <div class="meal-item">
+                      <div class="meal-item-top">
+                        <span class="badge ${colors[index % colors.length]}">${slot.label.slice(0, 1)}</span>
+                        <div>
+                          <strong>${h(String(meal.name).replace(/\s+\d+g$/, ""))}</strong>
+                          <p>${meal.calories} kcal · ${meal.protein}P ${meal.carbs}C ${meal.fat}F · ${Math.round(meal.grams || 0)}g</p>
+                        </div>
+                        <button class="pill" data-remove-meal="${mealIndex}">删除</button>
+                      </div>
+                      <details class="macro-editor">
+                        <summary>手动改宏量</summary>
+                        <div class="macro-editor-grid">
+                          <label>热量<input data-meal-macro="${mealIndex}" data-macro-field="calories" type="number" value="${meal.calories}" inputmode="decimal"></label>
+                          <label>蛋白<input data-meal-macro="${mealIndex}" data-macro-field="protein" type="number" value="${meal.protein}" inputmode="decimal"></label>
+                          <label>碳水<input data-meal-macro="${mealIndex}" data-macro-field="carbs" type="number" value="${meal.carbs}" inputmode="decimal"></label>
+                          <label>脂肪<input data-meal-macro="${mealIndex}" data-macro-field="fat" type="number" value="${meal.fat}" inputmode="decimal"></label>
+                        </div>
+                      </details>
+                    </div>
+                  `;
+                }).join("") : `<div class="meal-empty">这餐今天不吃也可以保持为空。需要恢复时添加一个常用组合。</div>`}
+              </div>
+            </section>
+          `;
+        }).join("");
         document.querySelectorAll("[data-remove-meal]").forEach(button => {
           button.onclick = () => {
             state.meals.splice(Number(button.dataset.removeMeal), 1);
+            saveDay();
+            render();
+          };
+        });
+        document.querySelectorAll("[data-add-preset-slot]").forEach(button => {
+          button.onclick = () => {
+            const select = document.querySelector(`[data-preset-select="${button.dataset.addPresetSlot}"]`);
+            addPresetMeals(select?.value);
+            saveDay();
+            render();
+          };
+        });
+        document.querySelectorAll("[data-meal-macro]").forEach(input => {
+          input.onchange = () => {
+            const meal = state.meals[Number(input.dataset.mealMacro)];
+            if (!meal) return;
+            const field = input.dataset.macroField;
+            meal[field] = field === "calories" ? Math.round(Number(input.value) || 0) : roundMacro(input.value);
             saveDay();
             render();
           };
@@ -1607,9 +1867,10 @@
           render();
         };
         $("#confirmMealReview").onclick = () => {
+          const slot = $("#mealSlotInput").value || "lunch";
           state.meals.push(...state.pendingMeals.map(meal => {
             const { caloriesPerGram, proteinPerGram, carbsPerGram, fatPerGram, ...entry } = meal;
-            return entry;
+            return mealWithMeta(entry, slot);
           }));
           state.pendingMeals = [];
           $("#aiMealText").value = "";
@@ -1727,7 +1988,7 @@
         const items = [
           ["体重", `${summary.weight} kg`, `睡眠 ${summary.sleep}h`],
           ["热量", `${summary.calories} kcal`, summary.calorieGap >= 0 ? `还差 ${summary.calorieGap}` : `超出 ${Math.abs(summary.calorieGap)}`],
-          ["蛋白质", `${summary.protein} g`, summary.proteinGap >= 0 ? `还差 ${summary.proteinGap}g` : `超出 ${Math.abs(summary.proteinGap)}g`],
+          ["蛋白质", `${roundMacro(summary.protein)} g`, summary.proteinGap >= 0 ? `还差 ${roundMacro(summary.proteinGap)}g` : `超出 ${roundMacro(Math.abs(summary.proteinGap))}g`],
           ["训练容量", `${Math.round(summary.volume / 100) / 10} t`, `${summary.steps} 步`]
         ];
         $("#dailySummary").innerHTML = items.map(([label, value, sub]) => `
@@ -1739,7 +2000,7 @@
         $("#historyList").innerHTML = history.length ? history.map(item => `
           <button class="insight" data-history-date="${item.date}" type="button">
             <span class="badge green">${item.date.slice(5).replace("-", "/")}</span>
-            <div><strong>${item.weight}kg · ${item.calories}kcal · ${Math.round(item.volume / 100) / 10}t</strong><p>蛋白质 ${item.protein}g · 步数 ${item.steps} · 心情 ${h(item.mood || "未记录")}</p></div>
+            <div><strong>${item.weight}kg · ${item.calories}kcal · ${Math.round(item.volume / 100) / 10}t</strong><p>蛋白质 ${roundMacro(item.protein)}g · 步数 ${item.steps} · 心情 ${h(item.mood || "未记录")}</p></div>
             <span class="pill">${item.calorieGap >= 0 ? "差" : "超"}${Math.abs(item.calorieGap)}</span>
           </button>
         `).join("") : `<div class="insight"><span class="badge blue">今</span><div><strong>还没有结算记录</strong><p>记录完体重、饮食和训练后，点完成今日结算。</p></div><span class="pill">待结算</span></div>`;
@@ -1767,7 +2028,7 @@
         const rows = [
           ["日期", item.date, item.mood || "未记录心情"],
           ["体重", `${item.weight} kg`, `${item.steps} 步`],
-          ["摄入", `${item.calories} kcal`, `${item.protein}P ${item.carbs}C ${item.fat}F`],
+          ["摄入", `${item.calories} kcal`, `${roundMacro(item.protein)}P ${roundMacro(item.carbs)}C ${roundMacro(item.fat)}F`],
           ["训练", `${Math.round(item.volume / 100) / 10} t`, item.calorieGap >= 0 ? `热量差 ${item.calorieGap}` : `热量超 ${Math.abs(item.calorieGap)}`]
         ];
         $("#historyDetail").innerHTML = rows.map(([label, value, sub]) => `<div class="summary-tile"><span class="label">${label}</span><strong>${h(value)}</strong><p>${h(sub)}</p></div>`).join("");
@@ -1783,7 +2044,7 @@
         $("#kpiWeight").textContent = `${state.profile.weight} kg`;
         $("#kpiBmi").textContent = `BMI ${target.bmi} · BMR ${target.bmr}`;
         $("#kpiCaloriesLeft").textContent = `${Math.max(target.calories - total.calories, 0)} kcal`;
-        $("#kpiProteinLeft").textContent = `蛋白质还差 ${Math.max(target.protein - total.protein, 0)}g`;
+        $("#kpiProteinLeft").textContent = `蛋白质还差 ${roundMacro(Math.max(target.protein - total.protein, 0))}g`;
         $("#kpiPlan").textContent = plan.name;
         $("#kpiPlanParts").textContent = state.profile.parts.join(" / ");
         $("#kpiVolume").textContent = `${Math.round(volume / 100) / 10} t`;

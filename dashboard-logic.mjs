@@ -300,12 +300,18 @@ function chineseNumber(value) {
 }
 
 export function totals(meals) {
-  return meals.reduce((sum, meal) => ({
+  const total = meals.reduce((sum, meal) => ({
     calories: sum.calories + meal.calories,
     protein: sum.protein + meal.protein,
     carbs: sum.carbs + meal.carbs,
     fat: sum.fat + meal.fat
   }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+  return {
+    calories: Math.round(total.calories),
+    protein: Math.round(total.protein * 10) / 10,
+    carbs: Math.round(total.carbs * 10) / 10,
+    fat: Math.round(total.fat * 10) / 10
+  };
 }
 
 export function workoutVolume(log) {
