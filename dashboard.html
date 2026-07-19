@@ -222,6 +222,7 @@
         display: inline-grid;
         grid-auto-flow: column;
         gap: 4px;
+        max-width: 100%;
         border-radius: 999px;
         padding: 4px;
         background: #eef1f6;
@@ -241,6 +242,8 @@
       }
 
       .chart {
+        display: block;
+        max-width: 100%;
         width: 100%;
         height: 244px;
       }
@@ -437,6 +440,7 @@
 
       body {
         background: #e9edf3;
+        overflow-x: hidden;
       }
 
       .app {
@@ -452,6 +456,8 @@
       }
 
       .main {
+        min-width: 0;
+        overflow-x: hidden;
         padding: 18px 14px 94px;
       }
 
@@ -481,6 +487,7 @@
       }
 
       .card {
+        min-width: 0;
         border-radius: 18px;
         padding: 16px;
         box-shadow: 0 10px 26px rgba(18, 24, 38, .06);
@@ -519,8 +526,16 @@
       .meal,
       .insight {
         grid-template-columns: 44px 1fr auto;
+        min-width: 0;
         min-height: 66px;
         border-radius: 16px;
+      }
+
+      .routine > div,
+      .meal > div,
+      .insight > div,
+      .summary-tile {
+        min-width: 0;
       }
 
       .badge {
@@ -530,7 +545,7 @@
       }
 
       .set-row {
-        grid-template-columns: 1fr 64px 58px auto;
+        grid-template-columns: minmax(0, 1fr) 64px 58px auto auto;
       }
 
       .exercise-gif img {
@@ -749,6 +764,43 @@
         gap: 8px;
       }
 
+      .meal-review {
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .meal-review-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 82px auto;
+        gap: 8px;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+        background: #fff;
+      }
+
+      .meal-review-row strong,
+      .meal-review-row p {
+        overflow-wrap: anywhere;
+      }
+
+      .meal-review-row input {
+        width: 100%;
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0 8px;
+        font: inherit;
+      }
+
+      .meal-review-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
       .food-results {
         display: grid;
         gap: 8px;
@@ -779,7 +831,7 @@
 
       .set-row {
         display: grid;
-        grid-template-columns: 1fr 72px 72px auto;
+        grid-template-columns: minmax(0, 1fr) 64px 58px auto auto;
         gap: 8px;
         align-items: center;
         border-radius: 14px;
@@ -797,6 +849,12 @@
 
       .set-row.done {
         background: #e9f9ef;
+      }
+
+      .set-tools {
+        display: grid;
+        grid-template-columns: 1fr;
+        margin-top: 10px;
       }
 
       .parts-picker {
@@ -837,13 +895,13 @@
 
       .checkin-grid {
         display: grid;
-        grid-template-columns: repeat(4, minmax(120px, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
       }
 
       .summary-grid {
         display: grid;
-        grid-template-columns: repeat(4, minmax(120px, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
         margin-top: 12px;
       }
@@ -859,6 +917,7 @@
         display: block;
         margin-top: 6px;
         font-size: 22px;
+        overflow-wrap: anywhere;
       }
 
       @media (max-width: 1060px) {
@@ -886,7 +945,7 @@
         }
 
         .set-row {
-          grid-template-columns: 1fr 56px 52px auto;
+          grid-template-columns: minmax(0, 1fr) 56px 52px auto auto;
           gap: 6px;
         }
       }
@@ -1045,10 +1104,11 @@
                 <textarea id="aiMealText" rows="4" placeholder="例如：早餐两个鸡蛋，一杯牛奶；中午200克米饭和150克鸡胸肉" aria-label="口述饮食"></textarea>
                 <div class="single-meal-actions">
                   <button id="addMealButton" class="btn soft">语音</button>
-                  <button id="aiParseMeal" class="btn primary">记录饮食</button>
+                  <button id="aiParseMeal" class="btn primary">解析饮食</button>
                 </div>
               </div>
               <p class="label" id="aiMealHint">只需要像聊天一样描述一餐。本地版会先用中文食物库估算，接入 API 后会用 AI 解析。</p>
+              <div id="mealReview" class="meal-review"></div>
               <div id="mealList" class="meal-list" style="margin-top:14px"></div>
             </article>
           </section>
@@ -1204,6 +1264,7 @@
         weekPlan: null,
         selectedFood: null,
         foodResults: [],
+        pendingMeals: [],
         selectedHistoryDate: "",
         history: [],
         seed: 1,
@@ -1266,7 +1327,12 @@
         state.weights[state.weights.length - 1] = state.profile.weight;
         state.completed = {};
         state.weekPlan = null;
-        state.workout = generateWorkout({ parts: state.profile.parts, goal: state.profile.goal, seed: state.seed, maxExercises: Math.min(5, state.profile.trainingDays + 1) });
+        state.planConfig = {
+          ...(state.planConfig || {}),
+          exercisesPerDay: configuredExerciseCount(),
+          setsPerExercise: configuredSetCount()
+        };
+        state.workout = generateWorkout({ parts: state.profile.parts, goal: state.profile.goal, seed: state.seed, maxExercises: state.planConfig.exercisesPerDay, setGoal: state.planConfig.setsPerExercise });
         state.selectedExercise = state.workout[0]?.id || "bench";
         saveDay();
         render();
@@ -1294,11 +1360,21 @@
         });
       }
       function pct(value, max) { return Math.min(Math.round(value / max * 100), 100); }
-      function exerciseById(id) { return exercises.find(exercise => exercise.id === id) || exercises[0]; }
+      function exerciseById(id) { return state.workout.find(exercise => exercise.id === id) || exercises.find(exercise => exercise.id === id) || exercises[0]; }
       function currentPlan() { return makePlan(state.profile)[0]; }
+      function configuredExerciseCount() {
+        return Math.max(Number($("#exercisesPerDayInput")?.value) || state.planConfig?.exercisesPerDay || (state.profile.goal === "bulk" ? 5 : 4), 1);
+      }
+      function configuredSetCount() {
+        return Math.max(Number($("#setsPerExerciseInput")?.value) || state.planConfig?.setsPerExercise || (state.profile.goal === "bulk" ? 4 : 3), 1);
+      }
       function selectedParts() {
         const parts = [...document.querySelectorAll("#partsPicker input:checked")].map(input => input.value);
         return parts.length ? parts : ["胸"];
+      }
+      function parseSetKey(key) {
+        const dash = key.lastIndexOf("-");
+        return { exerciseId: key.slice(0, dash), setIndex: Number(key.slice(dash + 1)) };
       }
       function ensureWorkout() {
         if (!state.workout?.length || state.workout.every(exercise => !exercise.media?.gif)) {
@@ -1306,7 +1382,7 @@
           const planned = state.weekPlan?.days?.[weekday];
           state.workout = planned?.workout?.length
             ? planned.workout
-            : generateWorkout({ parts: state.profile.parts, goal: state.profile.goal, seed: state.seed, maxExercises: Math.min(5, state.profile.trainingDays + 1) });
+            : generateWorkout({ parts: state.profile.parts, goal: state.profile.goal, seed: state.seed, maxExercises: configuredExerciseCount(), setGoal: configuredSetCount() });
           state.selectedExercise = state.workout.find(exercise => exercise.media?.gif)?.id || state.workout[0]?.id || "bench";
         }
       }
@@ -1344,7 +1420,12 @@
         state.profile.parts = selectedParts();
         state.seed += 1;
         state.completed = {};
-        state.workout = generateWorkout({ parts: state.profile.parts, goal: state.profile.goal, seed: state.seed, maxExercises: Math.min(5, state.profile.trainingDays + 1) });
+        state.planConfig = {
+          ...(state.planConfig || {}),
+          exercisesPerDay: configuredExerciseCount(),
+          setsPerExercise: configuredSetCount()
+        };
+        state.workout = generateWorkout({ parts: state.profile.parts, goal: state.profile.goal, seed: state.seed, maxExercises: state.planConfig.exercisesPerDay, setGoal: state.planConfig.setsPerExercise });
         state.selectedExercise = state.workout[0]?.id || "bench";
         $("#generatorHint").textContent = `已生成：${state.workout.map(exercise => exercise.name).join("、")}`;
         saveDay();
@@ -1399,11 +1480,47 @@
             <input data-weight="${id}" value="${set[0]}" inputmode="decimal" aria-label="重量">
             <input data-reps="${id}" value="${set[1]}" inputmode="numeric" aria-label="次数">
             <button class="btn ${done ? "dark" : "soft"}" data-done="${id}">${done ? "完成" : "打勾"}</button>
+            <button class="btn soft" data-remove-set="${exercise.id}-${index}" aria-label="删除第 ${index + 1} 组">删</button>
           </div>`;
-        }).join("");
+        }).join("") + `<div class="set-tools"><button class="btn soft" data-add-set="${exercise.id}">添加一组</button></div>`;
+        document.querySelectorAll("[data-weight], [data-reps]").forEach(input => {
+          input.onchange = () => {
+            const { exerciseId, setIndex } = parseSetKey(input.dataset.weight || input.dataset.reps);
+            const target = state.workout.find(item => item.id === exerciseId);
+            if (!target?.sets?.[setIndex]) return;
+            target.sets[setIndex][input.dataset.weight ? 0 : 1] = Number(input.value) || 0;
+            saveDay();
+            render();
+          };
+        });
         document.querySelectorAll("[data-done]").forEach(button => {
           button.onclick = () => {
             state.completed[button.dataset.done] = !state.completed[button.dataset.done];
+            saveDay();
+            render();
+          };
+        });
+        document.querySelectorAll("[data-add-set]").forEach(button => {
+          button.onclick = () => {
+            const target = state.workout.find(item => item.id === button.dataset.addSet);
+            if (!target) return;
+            const last = target.sets[target.sets.length - 1] || [0, target.repRange === "8-10" ? 8 : 10];
+            target.sets.push([...last]);
+            saveDay();
+            render();
+          };
+        });
+        document.querySelectorAll("[data-remove-set]").forEach(button => {
+          button.onclick = () => {
+            const parts = button.dataset.removeSet.split("-");
+            const setIndex = Number(parts.pop());
+            const exerciseId = parts.join("-");
+            const target = state.workout.find(item => item.id === exerciseId);
+            if (!target || target.sets.length <= 1) return;
+            target.sets.splice(setIndex, 1);
+            Object.keys(state.completed).forEach(key => {
+              if (key.startsWith(`${exerciseId}-`)) delete state.completed[key];
+            });
             saveDay();
             render();
           };
@@ -1428,6 +1545,77 @@
             render();
           };
         });
+      }
+      function normalizePendingMeal(meal) {
+        const grams = Math.max(Number(meal.grams) || 100, 1);
+        return {
+          ...meal,
+          grams,
+          caloriesPerGram: Number(meal.calories || 0) / grams,
+          proteinPerGram: Number(meal.protein || 0) / grams,
+          carbsPerGram: Number(meal.carbs || 0) / grams,
+          fatPerGram: Number(meal.fat || 0) / grams
+        };
+      }
+      function scalePendingMeal(meal, grams) {
+        const amount = Math.max(Number(grams) || 1, 1);
+        const cleanName = String(meal.name || "食物").replace(/\s+\d+g$/, "");
+        return {
+          ...meal,
+          name: `${cleanName} ${Math.round(amount)}g`,
+          grams: amount,
+          calories: Math.round((meal.caloriesPerGram || 0) * amount),
+          protein: Math.round((meal.proteinPerGram || 0) * amount * 10) / 10,
+          carbs: Math.round((meal.carbsPerGram || 0) * amount * 10) / 10,
+          fat: Math.round((meal.fatPerGram || 0) * amount * 10) / 10
+        };
+      }
+      function renderMealReview() {
+        if (!state.pendingMeals?.length) {
+          $("#mealReview").innerHTML = "";
+          return;
+        }
+        $("#mealReview").innerHTML = `
+          <div class="label">解析结果，可先修改克数或删除不准的项</div>
+          ${state.pendingMeals.map((meal, index) => `
+            <div class="meal-review-row">
+              <div><strong>${h(String(meal.name).replace(/\s+\d+g$/, ""))}</strong><p class="label">${meal.calories} kcal · ${meal.protein}P ${meal.carbs}C ${meal.fat}F</p></div>
+              <input data-review-grams="${index}" value="${Math.round(meal.grams || 100)}" inputmode="decimal" aria-label="克数">
+              <button class="btn soft" data-remove-review="${index}">删</button>
+            </div>
+          `).join("")}
+          <div class="meal-review-actions">
+            <button id="clearMealReview" class="btn soft">重写</button>
+            <button id="confirmMealReview" class="btn primary">确认加入</button>
+          </div>
+        `;
+        document.querySelectorAll("[data-review-grams]").forEach(input => {
+          input.onchange = () => {
+            const index = Number(input.dataset.reviewGrams);
+            state.pendingMeals[index] = scalePendingMeal(state.pendingMeals[index], input.value);
+            render();
+          };
+        });
+        document.querySelectorAll("[data-remove-review]").forEach(button => {
+          button.onclick = () => {
+            state.pendingMeals.splice(Number(button.dataset.removeReview), 1);
+            render();
+          };
+        });
+        $("#clearMealReview").onclick = () => {
+          state.pendingMeals = [];
+          render();
+        };
+        $("#confirmMealReview").onclick = () => {
+          state.meals.push(...state.pendingMeals.map(meal => {
+            const { caloriesPerGram, proteinPerGram, carbsPerGram, fatPerGram, ...entry } = meal;
+            return entry;
+          }));
+          state.pendingMeals = [];
+          $("#aiMealText").value = "";
+          saveDay();
+          render();
+        };
       }
       async function parseAiMeal() {
         const text = $("#aiMealText").value.trim();
@@ -1605,6 +1793,7 @@
           () => renderBars(total, target),
           () => renderRoutine(plan),
           renderSets,
+          renderMealReview,
           renderMeals,
           renderWeekPlan,
           renderChart,
@@ -1629,9 +1818,8 @@
       $("#aiParseMeal").onclick = async () => {
         const meals = await parseAiMeal();
         if (!meals.length) return;
-        state.meals.push(...meals);
-        $("#aiMealText").value = "";
-        saveDay();
+        state.pendingMeals = meals.map(normalizePendingMeal);
+        $("#aiMealHint").textContent = "已解析为下方清单。先改克数或删除不准的项，再确认加入。";
         render();
       };
       $("#activeDateInput").addEventListener("change", () => {
