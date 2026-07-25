@@ -4,12 +4,13 @@ import { readFile } from "node:fs/promises";
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
 
-const [pkg, schema, seed, page, storage, nutrition, types] = await Promise.all([
+const [pkg, schema, seed, page, storage, auth, nutrition, types] = await Promise.all([
   read("mvp/package.json"),
   read("mvp/supabase/schema.sql"),
   read("mvp/supabase/seed-open-data.sql"),
   read("mvp/app/page.tsx"),
   read("mvp/lib/app-storage.ts"),
+  read("mvp/lib/auth.ts"),
   read("mvp/lib/nutrition.ts"),
   read("mvp/lib/types.ts")
 ]);
@@ -38,6 +39,9 @@ assert(page.includes("确认加入今天"), "food entries should require explici
 assert(page.includes("loadStoredState"), "page should load through the storage adapter");
 assert(page.includes("saveStoredState"), "page should save through the storage adapter");
 assert(page.includes("sync-pill"), "page should tell users whether data is local or cloud-synced");
+assert(page.includes("auth-strip"), "page should include an auth entry point");
+assert(page.includes("sendMagicLink"), "page should let users request an email login link");
+assert(page.includes("signOut"), "page should let signed-in users sign out");
 assert(page.includes('fetch("/api/parse-meal"'), "meal parsing should go through the API route before falling back");
 assert(page.includes("保存这一餐为常用餐"), "food page should let users save repeated meals");
 assert(page.includes("addSet("), "training page should support adding sets");
@@ -55,6 +59,8 @@ assert(route.includes("crypto.randomUUID()"), "parse API should attach stable id
 assert(storage.includes("createOptionalClient"), "storage adapter should use Supabase when configured");
 assert(storage.includes(".from(\"app_snapshots\")"), "storage adapter should sync app snapshots to Supabase");
 assert(storage.includes("window.localStorage.setItem"), "storage adapter should preserve local fallback persistence");
+assert(auth.includes("signInWithOtp"), "auth helper should support email magic link login");
+assert(auth.includes("onAuthStateChange"), "auth helper should react to login/logout changes");
 assert(seed.includes("insert into public.food_catalog"), "seed should insert foods into Supabase");
 assert(seed.includes("insert into public.exercise_catalog"), "seed should insert exercises into Supabase");
 assert(seed.includes("Sanotsu/china-food-composition-data"), "seed should preserve the Chinese food source");

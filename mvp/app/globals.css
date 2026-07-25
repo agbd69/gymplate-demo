@@ -63,6 +63,31 @@ h1, h2, h3, p { margin: 0; }
 .sync-pill.cloud { color: #16784f; background: #eaf8f1; border-color: #ccebd9; }
 .sync-pill.local-fallback { color: #806014; background: #fff8df; border-color: #f0dfa4; }
 
+.auth-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+  background: rgba(255, 255, 255, .78);
+}
+.auth-strip input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 9px 10px;
+  color: var(--ink);
+  background: #fff;
+}
+.auth-strip .btn { min-height: 36px; border-radius: 12px; white-space: nowrap; }
+.auth-strip p { grid-column: 1 / -1; color: #806014; font-size: 12px; line-height: 1.4; }
+
 .page { display: grid; gap: 12px; }
 .card, .hero-card {
   min-width: 0;
@@ -275,5 +300,6 @@ h1, h2, h3, p { margin: 0; }
   .phone-shell { padding-left: 10px; padding-right: 10px; }
   .topbar { margin-left: -10px; margin-right: -10px; padding-left: 10px; padding-right: 10px; }
   .grid-2, .field-grid { grid-template-columns: 1fr; }
+  .auth-strip { grid-template-columns: 1fr; }
   .macro-edit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

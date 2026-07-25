@@ -5,6 +5,7 @@ import type { DailyRecord, MealEntry, MealSlot, MealTemplate, WorkoutSet } from 
 import { parseMealText, targets, totalMacros } from "@/lib/nutrition";
 import { defaultProfile, defaultRecord, defaultTemplates } from "@/lib/default-state";
 import { loadStoredState, saveStoredState, type StorageStatus } from "@/lib/app-storage";
+import { getAuthState, initialAuthState, listenForAuthChanges, sendMagicLink, signOut, type AuthState } from "@/lib/auth";
 
 const slots: Array<{ id: MealSlot; label: string }> = [
   { id: "breakfast", label: "早餐" },
@@ -26,6 +27,10 @@ export default function HomePage() {
   const [parsing, setParsing] = useState(false);
   const [parseError, setParseError] = useState("");
   const [storageStatus, setStorageStatus] = useState<StorageStatus>({ mode: "local", message: "准备保存" });
+  const [authState, setAuthState] = useState<AuthState>(() => initialAuthState());
+  const [email, setEmail] = useState("");
+  const [authMessage, setAuthMessage] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
 
   const target = useMemo(() => targets(profile), [profile]);
   const mealTotal = useMemo(() => totalMacros(record.meals), [record.meals]);
@@ -36,14 +41,29 @@ export default function HomePage() {
 
   useEffect(() => {
     let active = true;
-    loadStoredState({ record, templates }).then(({ state, status }) => {
+    Promise.all([
+      getAuthState(),
+      loadStoredState({ record, templates })
+    ]).then(([auth, stored]) => {
       if (!active) return;
-      setRecord(state.record);
-      setTemplates(state.templates);
-      setStorageStatus(status);
+      setAuthState(auth);
+      setRecord(stored.state.record);
+      setTemplates(stored.state.templates);
+      setStorageStatus(stored.status);
       setHydrated(true);
     });
-    return () => { active = false; };
+    const stop = listenForAuthChanges((auth) => {
+      setAuthState(auth);
+      loadStoredState({ record, templates }).then(({ state, status }) => {
+        setRecord(state.record);
+        setTemplates(state.templates);
+        setStorageStatus(status);
+      });
+    });
+    return () => {
+      active = false;
+      stop();
+    };
   }, []);
 
   useEffect(() => {
@@ -72,6 +92,33 @@ export default function HomePage() {
       setParseError("网络解析不可用，已用本地规则生成。");
     } finally {
       setParsing(false);
+    }
+  }
+
+  async function requestLogin() {
+    if (!email.trim()) return;
+    setAuthBusy(true);
+    setAuthMessage("");
+    try {
+      await sendMagicLink(email.trim());
+      setAuthMessage("登录链接已发送，请查看邮箱。");
+    } catch {
+      setAuthMessage("发送失败，请检查 Supabase 配置。");
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  async function requestSignOut() {
+    setAuthBusy(true);
+    setAuthMessage("");
+    try {
+      await signOut();
+      setAuthMessage("已退出，继续本地保存。");
+    } catch {
+      setAuthMessage("退出失败，请稍后再试。");
+    } finally {
+      setAuthBusy(false);
     }
   }
 
@@ -170,6 +217,25 @@ export default function HomePage() {
         </div>
         <span className={`sync-pill ${storageStatus.mode}`}>{storageStatus.message}</span>
       </header>
+
+      <section className="auth-strip">
+        {authState.configured ? (
+          authState.signedIn ? (
+            <>
+              <span>已登录 {authState.email}</span>
+              <button className="delete-link" onClick={requestSignOut} disabled={authBusy}>退出</button>
+            </>
+          ) : (
+            <>
+              <input value={email} onChange={event => setEmail(event.target.value)} inputMode="email" placeholder="邮箱登录后云同步" />
+              <button className="btn soft" onClick={requestLogin} disabled={authBusy}>{authBusy ? "发送中" : "发送登录链接"}</button>
+            </>
+          )
+        ) : (
+          <span>未配置 Supabase，当前为本地单机模式。</span>
+        )}
+        {authMessage && <p>{authMessage}</p>}
+      </section>
 
       {page === "training" && (
         <section className="page">

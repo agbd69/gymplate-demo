@@ -22,6 +22,8 @@ mvp/supabase/seed-open-data.sql
 
 如果 `.env.local` 设置了 `NEXT_PUBLIC_SUPABASE_URL` 和 `NEXT_PUBLIC_SUPABASE_ANON_KEY`，App 会尝试读取当前 Supabase session，并把 MVP 状态同步到 `app_snapshots`。没有配置或没有登录时，自动回退到浏览器本地保存。
 
+当前登录入口使用 Supabase 邮箱 Magic Link。需要在 Supabase Auth 里开启 Email provider，并把部署域名加入 Redirect URLs。
+
 重新生成开放数据 seed：
 
 ```bash
@@ -38,6 +40,7 @@ pnpm run seed:open-data
 - 数据结算：体重、步数、睡眠、心情可编辑，并联动热量、蛋白质、训练容量进度
 - API 路由：`/api/parse-meal`，没有 `OPENAI_API_KEY` 时返回规则解析 fallback
 - 持久化：默认本地保存；配置 Supabase 且用户已登录后同步到云端 `app_snapshots`
+- 登录入口：Supabase 邮箱 Magic Link 登录/退出，登录状态变化后自动重新拉取云端状态
 
 ## 验证
 
@@ -57,7 +60,8 @@ npm run test:mvp-runtime
 
 ## 下一步
 
-1. 接 Supabase Auth UI，让用户能登录并启用云端同步。
+1. 部署到 Vercel/Sites，并配置 Supabase Redirect URL。
 2. 接 OpenAI 饮食解析，保留待确认，不直接入账。
 3. 做常用餐编辑页和训练计划编辑页。
 4. 把 `app_snapshots` 中的 MVP 数据拆写到规范化表，支撑长期趋势图。
+5. 如需社交登录，再接 Google / Apple OAuth。
