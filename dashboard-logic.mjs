@@ -188,6 +188,21 @@ export function generateWorkout({ parts, goal = "cut", seed = 0, maxExercises = 
 
 export function parseMeal(text) {
   const normalized = text || "";
+  const picked = parseMealItems(normalized);
+  if (picked.length === 0) return { name: text || "自定义一餐", calories: 450, protein: 25, carbs: 50, fat: 14, grams: 100 };
+  const total = picked.reduce((sum, item) => ({
+    name: sum.name ? `${sum.name} + ${item.name}` : item.name,
+    calories: sum.calories + item.calories,
+    protein: sum.protein + item.protein,
+    carbs: sum.carbs + item.carbs,
+    fat: sum.fat + item.fat,
+    grams: sum.grams + (item.grams || 0)
+  }), { name: "", calories: 0, protein: 0, carbs: 0, fat: 0, grams: 0 });
+  return roundMeal(total);
+}
+
+export function parseMealItems(text) {
+  const normalized = text || "";
   const picked = parseCommonFoods(normalized);
   if (picked.length === 0) {
     for (const food of fallbackFoods) {
@@ -196,15 +211,7 @@ export function parseMeal(text) {
       if (matched && !isContainedByPicked) picked.push(scaleFoodForText(food, normalized, food.name, { defaultGrams: 100 }));
     }
   }
-  if (picked.length === 0) return { name: text || "自定义一餐", calories: 450, protein: 25, carbs: 50, fat: 14, grams: 100 };
-  return picked.reduce((sum, item) => ({
-    name: sum.name ? `${sum.name} + ${item.name}` : item.name,
-    calories: sum.calories + item.calories,
-    protein: sum.protein + item.protein,
-    carbs: sum.carbs + item.carbs,
-    fat: sum.fat + item.fat,
-    grams: sum.grams + (item.grams || 0)
-  }), { name: "", calories: 0, protein: 0, carbs: 0, fat: 0, grams: 0 });
+  return picked.map(roundMeal);
 }
 
 export function searchFoods(query, limit = 8) {
@@ -251,9 +258,11 @@ function parseCommonFoods(text) {
     if (picked.some(item => spec.aliases.some(name => item.name.includes(name)))) continue;
     const food = foodByQuery(spec.query);
     if (!food) continue;
-    picked.push(scaleFoodForText(food, text, alias, spec));
+    picked.push({ ...scaleFoodForText(food, text, alias, spec), order: text.indexOf(alias) });
   }
-  return picked;
+  return picked
+    .sort((a, b) => a.order - b.order)
+    .map(({ order, ...meal }) => meal);
 }
 
 function scaleFoodForText(food, text, alias = food.name, spec = {}) {
@@ -281,6 +290,17 @@ function scaleFoodForText(food, text, alias = food.name, spec = {}) {
     carbs: Math.round(food.carbs * scale * 10) / 10,
     fat: Math.round(food.fat * scale * 10) / 10,
     grams
+  };
+}
+
+function roundMeal(meal) {
+  return {
+    ...meal,
+    calories: Math.round(Number(meal.calories) || 0),
+    protein: Math.round((Number(meal.protein) || 0) * 10) / 10,
+    carbs: Math.round((Number(meal.carbs) || 0) * 10) / 10,
+    fat: Math.round((Number(meal.fat) || 0) * 10) / 10,
+    grams: Math.round((Number(meal.grams) || 0) * 10) / 10
   };
 }
 

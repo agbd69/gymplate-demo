@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { bmi, buildWeekPlan, dailySummary, dateKey, dayState, foodEntry, searchFoods, generateWorkout, makePlan, parseMeal, targets, totals, workoutVolume } from "../dashboard-logic.mjs";
+import { bmi, buildWeekPlan, dailySummary, dateKey, dayState, foodEntry, searchFoods, generateWorkout, makePlan, parseMeal, parseMealItems, targets, totals, workoutVolume } from "../dashboard-logic.mjs";
 
 const profile = { sex: "male", age: 30, height: 178, weight: 76, goal: "cut", trainingDays: 4, parts: ["胸", "背", "腿", "肩"] };
 
@@ -41,6 +41,17 @@ assert.match(spokenMeal.name, /纯牛奶（代表值，全脂） 250g/);
 assert.match(spokenMeal.name, /米饭（蒸，代表值） 200g/);
 assert.match(spokenMeal.name, /鸡胸脯肉 150g/);
 assert.equal(spokenMeal.carbs > 64 && spokenMeal.carbs < 66, true);
+
+const spokenItems = parseMealItems("早餐两个鸡蛋，一杯牛奶；中午200克米饭和150克鸡胸肉");
+assert.equal(spokenItems.length, 4);
+assert.deepEqual(spokenItems.map(item => item.grams), [100, 250, 200, 150]);
+assert.equal(spokenItems.find(item => item.name.includes("米饭")).carbs, 51.8);
+assert.equal(totals(spokenItems).carbs, spokenMeal.carbs);
+
+const dailySpeechItems = parseMealItems("午餐一碗米饭一块鸡胸肉");
+assert.equal(dailySpeechItems.length, 2);
+assert.equal(dailySpeechItems.find(item => item.name.includes("米饭")).grams, 150);
+assert.equal(dailySpeechItems.find(item => item.name.includes("鸡胸")).grams, 150);
 
 const chickenSearch = searchFoods("鸡", 5);
 assert.equal(chickenSearch.length, 5);

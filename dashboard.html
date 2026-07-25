@@ -802,6 +802,25 @@
         gap: 10px;
       }
 
+      .food-date-control {
+        display: grid;
+        justify-items: end;
+        gap: 8px;
+      }
+
+      .food-date-control input {
+        width: 138px;
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 0 8px;
+        color: var(--ink);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 850;
+        background: #fff;
+      }
+
       .single-meal-box textarea {
         width: 100%;
         min-height: 118px;
@@ -1354,7 +1373,10 @@
                   <span class="label">今日饮食</span>
                   <h2 id="foodHeroTitle">还差 0 kcal</h2>
                 </div>
-                <span id="foodHeroPill" class="pill">约算</span>
+                <div class="food-date-control">
+                  <input id="foodDateInput" type="date" aria-label="饮食记录日期">
+                  <span id="foodHeroPill" class="pill">约算</span>
+                </div>
               </div>
               <div class="food-calorie-track"><i id="foodCalorieTrack"></i></div>
               <div id="foodDailySummary" class="food-summary-row"></div>
@@ -1522,7 +1544,7 @@
       fallbackRoute();
     </script>
     <script type="module">
-      import { buildWeekPlan, dailySummary, dateKey, dayState, exercises, foodEntry, generateWorkout, makePlan, parseMeal, searchFoods, targets, totals, workoutVolume } from "./dashboard-logic.mjs";
+      import { buildWeekPlan, dailySummary, dateKey, dayState, exercises, foodEntry, generateWorkout, makePlan, parseMeal, parseMealItems, searchFoods, targets, totals, workoutVolume } from "./dashboard-logic.mjs";
 
       window.gymplateModuleLoaded = true;
 
@@ -1718,6 +1740,7 @@
       }
       function syncInputs() {
         $("#activeDateInput").value = state.activeDate;
+        $("#foodDateInput").value = state.activeDate;
         $("#heightInput").value = state.profile.height;
         $("#weightInput").value = state.profile.weight;
         $("#ageInput").value = state.profile.age;
@@ -2147,24 +2170,34 @@
           render();
         };
       }
+      function shouldUseMealApi() {
+        const host = location.hostname;
+        return location.protocol !== "file:"
+          && host !== "127.0.0.1"
+          && host !== "localhost"
+          && !host.endsWith("github.io");
+      }
       async function parseAiMeal() {
         const text = $("#aiMealText").value.trim();
         if (!text) return [];
-        try {
-          const response = await fetch("/api/parse-meal", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text })
-          });
-          if (response.ok) {
-            const data = await response.json();
-            if (Array.isArray(data.meals)) return data.meals;
-          }
-        } catch {}
+        if (shouldUseMealApi()) {
+          try {
+            const response = await fetch("/api/parse-meal", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text })
+            });
+            if (response.ok) {
+              const data = await response.json();
+              if (Array.isArray(data.meals)) return data.meals;
+            }
+          } catch {}
+        }
         const matches = searchFoods(text, 10)
           .map(food => foodEntry(food, inferFoodGrams(text, food.name)))
           .filter(meal => meal.calories > 0);
-        return matches.length ? matches : [parseMeal(text)];
+        const parsedItems = parseMealItems(text);
+        return parsedItems.length ? parsedItems : matches.length ? matches : [parseMeal(text)];
       }
       function inferFoodGrams(text, foodName) {
         const escaped = foodName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -2193,7 +2226,7 @@
         recognition.onresult = event => {
           const text = event.results?.[0]?.[0]?.transcript || "";
           input.value = text;
-          hint.textContent = text ? "已识别，点 AI 解析并记录即可加入今日饮食。" : "没有识别到内容，可以再试一次。";
+          hint.textContent = text ? "已识别，生成待确认餐卡后再决定是否加入今日饮食。" : "没有识别到内容，可以再试一次。";
         };
         recognition.onerror = () => {
           hint.textContent = "语音识别没有启动成功，可以直接输入口述文本。";
@@ -2357,6 +2390,13 @@
       $("#activeDateInput").addEventListener("change", () => {
         saveDay();
         loadDay($("#activeDateInput").value || dateKey(new Date()));
+        saveDay();
+        syncInputs();
+        render();
+      });
+      $("#foodDateInput").addEventListener("change", () => {
+        saveDay();
+        loadDay($("#foodDateInput").value || dateKey(new Date()));
         saveDay();
         syncInputs();
         render();
