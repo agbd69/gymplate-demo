@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { DailyRecord, MealEntry, MealSlot, MealTemplate, WorkoutSet } from "@/lib/types";
-import { parseMealText, targets, totalMacros } from "@/lib/nutrition";
-import { defaultProfile, defaultRecord, defaultTemplates } from "@/lib/default-state";
+import type { DailyRecord, Goal, MealEntry, MealSlot, MealTemplate, PlanSettings, Profile, WorkoutSet } from "@/lib/types";
+import { parseMealText, totalMacros } from "@/lib/nutrition";
+import { defaultPlanSettings, defaultProfile, defaultRecord, defaultTemplates } from "@/lib/default-state";
 import { loadStoredState, saveStoredState, type StorageStatus } from "@/lib/app-storage";
 import { getAuthState, initialAuthState, listenForAuthChanges, sendMagicLink, signOut, type AuthState } from "@/lib/auth";
+import { makeProfileMetrics, makeWeeklyPlan } from "@/lib/planner.mjs";
 
 const slots: Array<{ id: MealSlot; label: string }> = [
   { id: "breakfast", label: "早餐" },
@@ -16,7 +17,8 @@ const slots: Array<{ id: MealSlot; label: string }> = [
 
 export default function HomePage() {
   const [page, setPage] = useState<"training" | "food" | "data">("food");
-  const [profile] = useState(defaultProfile);
+  const [profile, setProfile] = useState<Profile>(defaultProfile);
+  const [planSettings, setPlanSettings] = useState<PlanSettings>(defaultPlanSettings);
   const [templates, setTemplates] = useState<MealTemplate[]>(() => defaultTemplates());
   const [record, setRecord] = useState<DailyRecord>(() => defaultRecord());
   const [slot, setSlot] = useState<MealSlot>("lunch");
@@ -32,7 +34,8 @@ export default function HomePage() {
   const [authMessage, setAuthMessage] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
 
-  const target = useMemo(() => targets(profile), [profile]);
+  const target = useMemo(() => makeProfileMetrics(profile), [profile]);
+  const weeklyPlan = useMemo(() => makeWeeklyPlan(profile, planSettings), [profile, planSettings]);
   const mealTotal = useMemo(() => totalMacros(record.meals), [record.meals]);
   const pendingTotal = useMemo(() => totalMacros(pending), [pending]);
   const remaining = target.calories - mealTotal.calories;
@@ -43,20 +46,24 @@ export default function HomePage() {
     let active = true;
     Promise.all([
       getAuthState(),
-      loadStoredState({ record, templates })
+      loadStoredState({ profile, record, templates, planSettings })
     ]).then(([auth, stored]) => {
       if (!active) return;
       setAuthState(auth);
+      setProfile(stored.state.profile);
       setRecord(stored.state.record);
       setTemplates(stored.state.templates);
+      setPlanSettings(stored.state.planSettings);
       setStorageStatus(stored.status);
       setHydrated(true);
     });
     const stop = listenForAuthChanges((auth) => {
       setAuthState(auth);
-      loadStoredState({ record, templates }).then(({ state, status }) => {
+      loadStoredState({ profile, record, templates, planSettings }).then(({ state, status }) => {
+        setProfile(state.profile);
         setRecord(state.record);
         setTemplates(state.templates);
+        setPlanSettings(state.planSettings);
         setStorageStatus(status);
       });
     });
@@ -69,10 +76,10 @@ export default function HomePage() {
   useEffect(() => {
     if (!hydrated) return;
     const timeout = window.setTimeout(() => {
-      saveStoredState({ record, templates }).then(setStorageStatus);
+      saveStoredState({ profile, record, templates, planSettings }).then(setStorageStatus);
     }, 250);
     return () => window.clearTimeout(timeout);
-  }, [hydrated, record, templates]);
+  }, [hydrated, profile, record, templates, planSettings]);
 
   async function parseMeal() {
     if (!mealText.trim()) return;
@@ -208,6 +215,21 @@ export default function HomePage() {
     }));
   }
 
+  function updateProfile(patch: Partial<Profile>) {
+    setProfile(current => ({ ...current, ...patch }));
+  }
+
+  function updatePlanSettings(patch: Partial<PlanSettings>) {
+    setPlanSettings(current => ({ ...current, ...patch }));
+  }
+
+  function applyGeneratedPlan() {
+    const nextTrainingDay = weeklyPlan.find(day => day.type === "training");
+    if (!nextTrainingDay) return;
+    setRecord(current => ({ ...current, exercises: nextTrainingDay.exercises }));
+    setPage("training");
+  }
+
   return (
     <main className="phone-shell">
       <header className="topbar">
@@ -244,6 +266,35 @@ export default function HomePage() {
               <span className="label">今日训练</span>
               <h2>胸背肩 · 固定周计划</h2>
               <p>{completedSets.length}/{record.exercises.flatMap(item => item.sets).length} 组完成 · 训练容量 {Math.round(volume / 100) / 10} t</p>
+            </div>
+          </article>
+
+          <article className="card stack">
+            <div className="section-head compact">
+              <div>
+                <span className="label">计划生成器</span>
+                <h2>按你的目标生成固定周计划</h2>
+              </div>
+              <button className="btn dark" onClick={applyGeneratedPlan}>生成</button>
+            </div>
+            <div className="field-grid">
+              <label>每周训练<input inputMode="numeric" value={profile.trainingDays} onChange={event => updateProfile({ trainingDays: numberFromInput(event.target.value, 1, 7) })} /></label>
+              <label>每天动作<input inputMode="numeric" value={planSettings.exerciseCount} onChange={event => updatePlanSettings({ exerciseCount: numberFromInput(event.target.value, 2, 8) })} /></label>
+              <label>每动作组数<input inputMode="numeric" value={planSettings.setsPerExercise} onChange={event => updatePlanSettings({ setsPerExercise: numberFromInput(event.target.value, 1, 6) })} /></label>
+              <label>目标
+                <select value={profile.goal} onChange={event => updateProfile({ goal: event.target.value as Goal })}>
+                  <option value="cut">减脂</option>
+                  <option value="maintain">维持</option>
+                  <option value="bulk">增肌</option>
+                </select>
+              </label>
+            </div>
+            <div className="week-strip">
+              {weeklyPlan.map(day => (
+                <span className={day.type === "training" ? "active" : ""} key={day.weekday}>
+                  周{["一", "二", "三", "四", "五", "六", "日"][day.weekday - 1]}
+                </span>
+              ))}
             </div>
           </article>
 
@@ -397,6 +448,30 @@ export default function HomePage() {
           </article>
 
           <article className="card stack">
+            <div className="section-head compact">
+              <div>
+                <span className="label">基础设置</span>
+                <h2>BMI、基础代谢与目标摄入</h2>
+              </div>
+            </div>
+            <div className="field-grid">
+              <label>身高 cm<input inputMode="decimal" value={profile.heightCm} onChange={event => updateProfile({ heightCm: numberFromInput(event.target.value, 80, 230) })} /></label>
+              <label>体重 kg<input inputMode="decimal" value={profile.weightKg} onChange={event => updateProfile({ weightKg: numberFromInput(event.target.value, 25, 250) })} /></label>
+              <label>年龄<input inputMode="numeric" value={profile.age} onChange={event => updateProfile({ age: numberFromInput(event.target.value, 10, 100) })} /></label>
+              <label>性别
+                <select value={profile.sex} onChange={event => updateProfile({ sex: event.target.value as Profile["sex"] })}>
+                  <option value="male">男</option>
+                  <option value="female">女</option>
+                </select>
+              </label>
+            </div>
+            <div className="grid-2">
+              <Summary label="BMI" value={`${target.bmi}`} sub="按身高体重计算" />
+              <Summary label="基础代谢" value={`${target.bmr} kcal`} sub="Mifflin 公式估算" />
+            </div>
+          </article>
+
+          <article className="card stack">
             <div className="grid-2">
               <Summary label="热量" value={`${mealTotal.calories} kcal`} sub={remaining >= 0 ? `还差 ${remaining}` : `超 ${Math.abs(remaining)}`} />
               <Summary label="蛋白质" value={`${mealTotal.protein} g`} sub={`目标 ${target.protein}g`} />
@@ -499,4 +574,10 @@ function isMealSlot(value: unknown): value is MealSlot {
 function numeric(value: unknown): number {
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? Math.max(0, Math.round(numberValue * 10) / 10) : 0;
+}
+
+function numberFromInput(value: string, min: number, max: number): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return min;
+  return Math.min(max, Math.max(min, Math.round(parsed)));
 }

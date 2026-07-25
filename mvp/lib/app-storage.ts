@@ -1,11 +1,13 @@
-import type { DailyRecord, MealTemplate } from "./types";
+import type { DailyRecord, MealTemplate, PlanSettings, Profile } from "./types";
 import { createOptionalClient } from "./supabase/client";
 
 export const appStorageKey = "gymplate-mvp-state-v1";
 
 export type StoredState = {
+  profile: Profile;
   record: DailyRecord;
   templates: MealTemplate[];
+  planSettings: PlanSettings;
 };
 
 export type StorageStatus = {
@@ -14,7 +16,7 @@ export type StorageStatus = {
 };
 
 export async function loadStoredState(fallback: StoredState): Promise<{ state: StoredState; status: StorageStatus }> {
-  const localState = readLocalState() ?? fallback;
+  const localState = readLocalState(fallback);
   const client = createOptionalClient();
   if (!client) {
     return { state: localState, status: { mode: "local", message: "本地保存" } };
@@ -36,7 +38,7 @@ export async function loadStoredState(fallback: StoredState): Promise<{ state: S
     return { state: localState, status: { mode: "local-fallback", message: "云端读取失败，已回退本地" } };
   }
 
-  const cloudState = parseStoredState(data?.state);
+  const cloudState = parseStoredState(data?.state, fallback);
   return { state: cloudState ?? localState, status: { mode: "cloud", message: "云端同步" } };
 }
 
@@ -57,16 +59,21 @@ export async function saveStoredState(state: StoredState): Promise<StorageStatus
   return { mode: "cloud", message: "云端同步" };
 }
 
-function readLocalState(): StoredState | null {
+function readLocalState(fallback: StoredState): StoredState {
   try {
-    return parseStoredState(JSON.parse(window.localStorage.getItem(appStorageKey) ?? "null"));
+    return parseStoredState(JSON.parse(window.localStorage.getItem(appStorageKey) ?? "null"), fallback) ?? fallback;
   } catch {
-    return null;
+    return fallback;
   }
 }
 
-function parseStoredState(value: unknown): StoredState | null {
+function parseStoredState(value: unknown, fallback: StoredState): StoredState | null {
   const state = value as Partial<StoredState> | null;
   if (!state || !state.record || !Array.isArray(state.templates)) return null;
-  return { record: state.record, templates: state.templates };
+  return {
+    profile: state.profile ?? fallback.profile,
+    record: state.record,
+    templates: state.templates,
+    planSettings: state.planSettings ?? fallback.planSettings
+  };
 }

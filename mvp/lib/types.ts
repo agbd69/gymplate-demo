@@ -34,6 +34,11 @@ export type Profile = {
   trainingDays: number;
 };
 
+export type PlanSettings = {
+  exerciseCount: number;
+  setsPerExercise: number;
+};
+
 export type WorkoutSet = {
   id: string;
   exerciseId: string;

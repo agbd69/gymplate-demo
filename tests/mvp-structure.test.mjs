@@ -4,13 +4,14 @@ import { readFile } from "node:fs/promises";
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
 
-const [pkg, schema, seed, page, storage, auth, nutrition, types, vercel, deployment] = await Promise.all([
+const [pkg, schema, seed, page, storage, auth, planner, nutrition, types, vercel, deployment] = await Promise.all([
   read("mvp/package.json"),
   read("mvp/supabase/schema.sql"),
   read("mvp/supabase/seed-open-data.sql"),
   read("mvp/app/page.tsx"),
   read("mvp/lib/app-storage.ts"),
   read("mvp/lib/auth.ts"),
+  read("mvp/lib/planner.mjs"),
   read("mvp/lib/nutrition.ts"),
   read("mvp/lib/types.ts"),
   read("mvp/vercel.json"),
@@ -49,9 +50,15 @@ assert(page.includes("保存这一餐为常用餐"), "food page should let users
 assert(page.includes("addSet("), "training page should support adding sets");
 assert(page.includes("deleteSet("), "training page should support deleting sets");
 assert(page.includes("身体日志"), "data page should include editable body log inputs");
+assert(page.includes("基础设置"), "data page should include profile setup controls");
+assert(page.includes("计划生成器"), "training page should include a plan generator");
+assert(page.includes("makeWeeklyPlan"), "page should generate weekly training plans from profile settings");
 assert(page.includes("EditableMealRow"), "meal macros should be editable by the user");
 
 assert(types.includes("ExercisePlan"), "training data should model exercises with nested sets");
+assert(types.includes("PlanSettings"), "training preferences should be persisted as plan settings");
+assert(planner.includes("makeProfileMetrics"), "planner should compute BMI, BMR, and macro targets");
+assert(planner.includes("makeWeeklyPlan"), "planner should generate weekly plans");
 assert(nutrition.includes('source: "manual"'), "unknown foods should not get fake random nutrition values");
 assert(!nutrition.includes("calories: 450"), "unknown foods should not default to a misleading 450 kcal estimate");
 

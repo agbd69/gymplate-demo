@@ -1,5 +1,6 @@
-import type { DailyRecord, ExercisePlan, MealTemplate, Profile } from "./types";
+import type { DailyRecord, ExercisePlan, MealTemplate, PlanSettings, Profile } from "./types";
 import { parseMealText } from "./nutrition";
+import { makeWeeklyPlan } from "./planner.mjs";
 
 export const defaultProfile: Profile = {
   sex: "male",
@@ -8,6 +9,11 @@ export const defaultProfile: Profile = {
   weightKg: 76,
   goal: "cut",
   trainingDays: 4
+};
+
+export const defaultPlanSettings: PlanSettings = {
+  exerciseCount: 4,
+  setsPerExercise: 3
 };
 
 export function defaultTemplates(): MealTemplate[] {
@@ -19,12 +25,8 @@ export function defaultTemplates(): MealTemplate[] {
 }
 
 export function defaultExercises(): ExercisePlan[] {
-  return [
-    makeExercise("bench", "杠铃卧推", "胸", 3, 45, 8),
-    makeExercise("row", "坐姿划船", "背", 3, 50, 10),
-    makeExercise("press", "哑铃肩推", "肩", 3, 18, 10),
-    makeExercise("triceps", "绳索下压", "臂", 2, 25, 12)
-  ];
+  return makeWeeklyPlan(defaultProfile, defaultPlanSettings)
+    .find(day => day.type === "training")?.exercises ?? [];
 }
 
 export function defaultRecord(): DailyRecord {
@@ -36,24 +38,5 @@ export function defaultRecord(): DailyRecord {
     steps: 8000,
     sleepHours: 7,
     mood: "正常"
-  };
-}
-
-function makeExercise(id: string, exerciseName: string, muscleGroup: string, setCount: number, weightKg: number, reps: number): ExercisePlan {
-  return {
-    id,
-    exerciseName,
-    muscleGroup,
-    restSeconds: 90,
-    sets: Array.from({ length: setCount }, (_, index) => ({
-      id: `${id}-${index + 1}`,
-      exerciseId: id,
-      exerciseName,
-      muscleGroup,
-      setIndex: index + 1,
-      weightKg,
-      reps,
-      completed: false
-    }))
   };
 }

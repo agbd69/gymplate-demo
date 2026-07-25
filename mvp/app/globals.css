@@ -218,7 +218,7 @@ h1, h2, h3, p { margin: 0; }
   font-size: 11px;
   font-weight: 850;
 }
-.macro-edit-grid input, .field-grid input {
+.macro-edit-grid input, .field-grid input, .field-grid select {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -227,6 +227,28 @@ h1, h2, h3, p { margin: 0; }
   font-size: 13px;
   font-weight: 850;
   background: #fff;
+}
+
+.week-strip {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+.week-strip span {
+  display: grid;
+  place-items: center;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  background: #fff;
+}
+.week-strip span.active {
+  color: #fff;
+  border-color: #111318;
+  background: #111318;
 }
 
 .set-head, .set-row {
