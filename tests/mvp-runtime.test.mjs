@@ -34,6 +34,11 @@ try {
   assert.equal(chicken.grams, 150);
   assert.equal(chicken.protein, 36.9);
 
+  const search = await fetch(`http://127.0.0.1:${port}/api/search-food?q=${encodeURIComponent("米饭")}`);
+  assert.equal(search.status, 200);
+  const searchPayload = await search.json();
+  assert.equal(searchPayload.foods.some(item => item.name.includes("米饭")), true);
+
   console.log("mvp runtime checks passed");
 } finally {
   child.kill("SIGTERM");

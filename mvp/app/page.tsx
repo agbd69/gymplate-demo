@@ -8,6 +8,7 @@ import { loadStoredState, saveStoredState, type StorageStatus } from "@/lib/app-
 import { getAuthState, initialAuthState, listenForAuthChanges, sendMagicLink, signOut, type AuthState } from "@/lib/auth";
 import { makeProfileMetrics, makeWeeklyPlan } from "@/lib/planner.mjs";
 import { addHistoryRecord, createNextDayRecord, restoreHistoryRecord, trendFromHistory, type HistorySummary } from "@/lib/history.mjs";
+import type { CatalogFood } from "@/lib/food-search.mjs";
 
 const slots: Array<{ id: MealSlot; label: string }> = [
   { id: "breakfast", label: "早餐" },
@@ -26,6 +27,10 @@ export default function HomePage() {
   const [slot, setSlot] = useState<MealSlot>("lunch");
   const [mealText, setMealText] = useState("");
   const [pending, setPending] = useState<MealEntry[]>([]);
+  const [foodQuery, setFoodQuery] = useState("");
+  const [foodGrams, setFoodGrams] = useState(100);
+  const [foodResults, setFoodResults] = useState<CatalogFood[]>([]);
+  const [foodSearching, setFoodSearching] = useState(false);
   const [selectedTemplateSlot, setSelectedTemplateSlot] = useState<MealSlot>("lunch");
   const [hydrated, setHydrated] = useState(false);
   const [parsing, setParsing] = useState(false);
@@ -105,6 +110,35 @@ export default function HomePage() {
     } finally {
       setParsing(false);
     }
+  }
+
+  async function searchCatalog() {
+    if (!foodQuery.trim()) return;
+    setFoodSearching(true);
+    try {
+      const response = await fetch(`/api/search-food?q=${encodeURIComponent(foodQuery.trim())}&limit=8`);
+      if (!response.ok) throw new Error("search failed");
+      const data = await response.json();
+      setFoodResults(Array.isArray(data.foods) ? data.foods : []);
+    } finally {
+      setFoodSearching(false);
+    }
+  }
+
+  function addCatalogFood(food: CatalogFood) {
+    const scale = foodGrams / 100;
+    setPending(current => [...current, {
+      id: crypto.randomUUID(),
+      slot,
+      foodName: food.name,
+      grams: foodGrams,
+      calories: Math.round(food.calories * scale),
+      protein: roundMacro(food.protein * scale),
+      carbs: roundMacro(food.carbs * scale),
+      fat: roundMacro(food.fat * scale),
+      source: "food-db",
+      macroEdited: false
+    }]);
   }
 
   async function requestLogin() {
@@ -402,6 +436,23 @@ export default function HomePage() {
               <button className="btn soft" onClick={addManualPendingMeal}>手动补一条</button>
             </div>
             {parseError && <p className="hint">{parseError}</p>}
+            <div className="catalog-search">
+              <div className="action-row compact">
+                <input value={foodQuery} onChange={event => setFoodQuery(event.target.value)} placeholder="查食物库，如 米饭 / 鸡胸" />
+                <input inputMode="decimal" value={foodGrams} onChange={event => setFoodGrams(numberFromInput(event.target.value, 1, 5000))} aria-label="食物克数" />
+              </div>
+              <button className="btn soft" onClick={searchCatalog} disabled={foodSearching}>{foodSearching ? "搜索中" : `按 ${foodGrams}g 搜索食物库`}</button>
+              {foodResults.length > 0 && (
+                <div className="food-results">
+                  {foodResults.map(food => (
+                    <button key={food.id} onClick={() => addCatalogFood(food)}>
+                      <strong>{food.name}</strong>
+                      <span>{food.calories} kcal / 100g · P {food.protein} C {food.carbs} F {food.fat}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             {pending.length > 0 && (
               <div className="stack">
                 <div className="inline-total">
@@ -679,4 +730,8 @@ function numberFromInput(value: string, min: number, max: number): number {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return min;
   return Math.min(max, Math.max(min, Math.round(parsed)));
+}
+
+function roundMacro(value: number): number {
+  return Math.round(value * 10) / 10;
 }

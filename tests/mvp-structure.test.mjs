@@ -4,15 +4,17 @@ import { readFile } from "node:fs/promises";
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
 
-const [pkg, schema, seed, page, storage, auth, planner, history, nutrition, types, vercel, deployment] = await Promise.all([
+const [pkg, schema, seed, page, searchRoute, storage, auth, planner, history, foodSearch, nutrition, types, vercel, deployment] = await Promise.all([
   read("mvp/package.json"),
   read("mvp/supabase/schema.sql"),
   read("mvp/supabase/seed-open-data.sql"),
   read("mvp/app/page.tsx"),
+  read("mvp/app/api/search-food/route.ts"),
   read("mvp/lib/app-storage.ts"),
   read("mvp/lib/auth.ts"),
   read("mvp/lib/planner.mjs"),
   read("mvp/lib/history.mjs"),
+  read("mvp/lib/food-search.mjs"),
   read("mvp/lib/nutrition.ts"),
   read("mvp/lib/types.ts"),
   read("mvp/vercel.json"),
@@ -41,6 +43,8 @@ assert(schema.includes("auth.uid() = user_id"), "schema should scope user data t
 assert(page.includes('useState<"training" | "food" | "data">'), "page should expose three primary tabs");
 assert(page.includes("确认加入今天"), "food entries should require explicit confirmation");
 assert(page.includes("addManualPendingMeal"), "food page should support manual pending meal entries");
+assert(page.includes("searchCatalog"), "food page should search the food catalog");
+assert(page.includes("food-results"), "food page should render catalog search results");
 assert(page.includes("foodName"), "meal editor should support editing food names");
 assert(page.includes("loadStoredState"), "page should load through the storage adapter");
 assert(page.includes("saveStoredState"), "page should save through the storage adapter");
@@ -73,6 +77,8 @@ assert(planner.includes("makeProfileMetrics"), "planner should compute BMI, BMR,
 assert(planner.includes("makeWeeklyPlan"), "planner should generate weekly plans");
 assert(history.includes("summarizeRecord"), "history helper should summarize daily records");
 assert(history.includes("trendFromHistory"), "history helper should create trend series");
+assert(foodSearch.includes("foodDataset"), "food search should use the open Chinese food dataset");
+assert(searchRoute.includes("searchFoodCatalog"), "search API should expose catalog search");
 assert(nutrition.includes('source: "manual"'), "unknown foods should not get fake random nutrition values");
 assert(!nutrition.includes("calories: 450"), "unknown foods should not default to a misleading 450 kcal estimate");
 

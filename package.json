@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "import:data": "node scripts/import-open-data.mjs",
-    "test": "node tests/open-data.test.mjs && node tests/dashboard-logic.test.mjs && node tests/dashboard-page.test.mjs && node tests/mvp-planner.test.mjs && node tests/mvp-history.test.mjs && node tests/mvp-structure.test.mjs",
+    "test": "node tests/open-data.test.mjs && node tests/dashboard-logic.test.mjs && node tests/dashboard-page.test.mjs && node tests/mvp-planner.test.mjs && node tests/mvp-history.test.mjs && node tests/mvp-food-search.test.mjs && node tests/mvp-structure.test.mjs",
     "test:mvp-runtime": "node tests/mvp-runtime.test.mjs"
   }
 }

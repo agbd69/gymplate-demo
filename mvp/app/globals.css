@@ -219,6 +219,41 @@ h1, h2, h3, p { margin: 0; }
   padding: 0 10px;
   font-size: 12px;
 }
+.catalog-search {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 10px;
+  background: #fbfcfe;
+}
+.catalog-search input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 9px 10px;
+  color: var(--ink);
+  background: #fff;
+}
+.food-results {
+  display: grid;
+  gap: 7px;
+}
+.food-results button {
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 10px;
+  text-align: left;
+  background: #fff;
+}
+.food-results strong { font-size: 13px; }
+.food-results span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
 .meal-title input {
   width: 100%;
   border: 0;
