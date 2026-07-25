@@ -4,17 +4,19 @@ import { readFile } from "node:fs/promises";
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
 
-const [pkg, schema, seed, page, searchRoute, storage, auth, planner, history, foodSearch, nutrition, types, vercel, deployment] = await Promise.all([
+const [pkg, schema, seed, page, searchRoute, exerciseRoute, storage, auth, planner, history, foodSearch, exerciseSearch, nutrition, types, vercel, deployment] = await Promise.all([
   read("mvp/package.json"),
   read("mvp/supabase/schema.sql"),
   read("mvp/supabase/seed-open-data.sql"),
   read("mvp/app/page.tsx"),
   read("mvp/app/api/search-food/route.ts"),
+  read("mvp/app/api/search-exercise/route.ts"),
   read("mvp/lib/app-storage.ts"),
   read("mvp/lib/auth.ts"),
   read("mvp/lib/planner.mjs"),
   read("mvp/lib/history.mjs"),
   read("mvp/lib/food-search.mjs"),
+  read("mvp/lib/exercise-search.mjs"),
   read("mvp/lib/nutrition.ts"),
   read("mvp/lib/types.ts"),
   read("mvp/vercel.json"),
@@ -69,6 +71,8 @@ assert(page.includes("计划生成器"), "training page should include a plan ge
 assert(page.includes("makeWeeklyPlan"), "page should generate weekly training plans from profile settings");
 assert(page.includes("exercise-guide"), "training cards should show exercise guidance");
 assert(page.includes("动作演示"), "training cards should render GIF demos with useful alt text");
+assert(page.includes("searchExercises"), "training page should search the exercise catalog");
+assert(page.includes("exercise-results"), "training page should render exercise search results");
 assert(page.includes("EditableMealRow"), "meal macros should be editable by the user");
 
 assert(types.includes("ExercisePlan"), "training data should model exercises with nested sets");
@@ -79,6 +83,8 @@ assert(history.includes("summarizeRecord"), "history helper should summarize dai
 assert(history.includes("trendFromHistory"), "history helper should create trend series");
 assert(foodSearch.includes("foodDataset"), "food search should use the open Chinese food dataset");
 assert(searchRoute.includes("searchFoodCatalog"), "search API should expose catalog search");
+assert(exerciseSearch.includes("exerciseDataset"), "exercise search should use the open exercise dataset");
+assert(exerciseRoute.includes("searchExerciseCatalog"), "exercise API should expose catalog search");
 assert(nutrition.includes('source: "manual"'), "unknown foods should not get fake random nutrition values");
 assert(!nutrition.includes("calories: 450"), "unknown foods should not default to a misleading 450 kcal estimate");
 

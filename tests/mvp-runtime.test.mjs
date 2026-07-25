@@ -39,6 +39,11 @@ try {
   const searchPayload = await search.json();
   assert.equal(searchPayload.foods.some(item => item.name.includes("米饭")), true);
 
+  const exerciseSearch = await fetch(`http://127.0.0.1:${port}/api/search-exercise?q=${encodeURIComponent("背")}`);
+  assert.equal(exerciseSearch.status, 200);
+  const exercisePayload = await exerciseSearch.json();
+  assert.equal(exercisePayload.exercises.some(item => item.media?.gif), true);
+
   console.log("mvp runtime checks passed");
 } finally {
   child.kill("SIGTERM");

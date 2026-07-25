@@ -254,6 +254,36 @@ h1, h2, h3, p { margin: 0; }
   font-size: 12px;
   font-weight: 800;
 }
+.exercise-results {
+  display: grid;
+  gap: 8px;
+}
+.exercise-results button {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 8px;
+  text-align: left;
+  background: #fff;
+}
+.exercise-results img {
+  width: 54px;
+  height: 54px;
+  border-radius: 11px;
+  object-fit: cover;
+  background: #eef1f5;
+}
+.exercise-results span { display: grid; gap: 3px; }
+.exercise-results strong { font-size: 13px; }
+.exercise-results em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
 .meal-title input {
   width: 100%;
   border: 0;

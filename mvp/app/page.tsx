@@ -9,6 +9,7 @@ import { getAuthState, initialAuthState, listenForAuthChanges, sendMagicLink, si
 import { makeProfileMetrics, makeWeeklyPlan } from "@/lib/planner.mjs";
 import { addHistoryRecord, createNextDayRecord, restoreHistoryRecord, trendFromHistory, type HistorySummary } from "@/lib/history.mjs";
 import type { CatalogFood } from "@/lib/food-search.mjs";
+import type { CatalogExercise } from "@/lib/exercise-search.mjs";
 
 const slots: Array<{ id: MealSlot; label: string }> = [
   { id: "breakfast", label: "早餐" },
@@ -31,6 +32,9 @@ export default function HomePage() {
   const [foodGrams, setFoodGrams] = useState(100);
   const [foodResults, setFoodResults] = useState<CatalogFood[]>([]);
   const [foodSearching, setFoodSearching] = useState(false);
+  const [exerciseQuery, setExerciseQuery] = useState("");
+  const [exerciseResults, setExerciseResults] = useState<CatalogExercise[]>([]);
+  const [exerciseSearching, setExerciseSearching] = useState(false);
   const [selectedTemplateSlot, setSelectedTemplateSlot] = useState<MealSlot>("lunch");
   const [hydrated, setHydrated] = useState(false);
   const [parsing, setParsing] = useState(false);
@@ -139,6 +143,26 @@ export default function HomePage() {
       source: "food-db",
       macroEdited: false
     }]);
+  }
+
+  async function searchExercises() {
+    if (!exerciseQuery.trim()) return;
+    setExerciseSearching(true);
+    try {
+      const response = await fetch(`/api/search-exercise?q=${encodeURIComponent(exerciseQuery.trim())}&limit=8`);
+      if (!response.ok) throw new Error("search failed");
+      const data = await response.json();
+      setExerciseResults(Array.isArray(data.exercises) ? data.exercises : []);
+    } finally {
+      setExerciseSearching(false);
+    }
+  }
+
+  function addCatalogExercise(exercise: CatalogExercise) {
+    setRecord(current => ({
+      ...current,
+      exercises: [...current.exercises, makeExerciseFromCatalog(exercise, planSettings.setsPerExercise)]
+    }));
   }
 
   async function requestLogin() {
@@ -369,6 +393,31 @@ export default function HomePage() {
                   周{["一", "二", "三", "四", "五", "六", "日"][day.weekday - 1]}
                 </span>
               ))}
+            </div>
+          </article>
+
+          <article className="card stack">
+            <div className="section-head compact">
+              <div>
+                <span className="label">动作库</span>
+                <h2>搜索并加入今日训练</h2>
+              </div>
+            </div>
+            <div className="catalog-search">
+              <div className="action-row compact">
+                <input value={exerciseQuery} onChange={event => setExerciseQuery(event.target.value)} placeholder="搜部位或动作，如 背 / row" />
+                <button className="btn soft" onClick={searchExercises} disabled={exerciseSearching}>{exerciseSearching ? "搜索中" : "搜索动作"}</button>
+              </div>
+              {exerciseResults.length > 0 && (
+                <div className="exercise-results">
+                  {exerciseResults.map(exercise => (
+                    <button key={exercise.id} onClick={() => addCatalogExercise(exercise)}>
+                      <img src={exercise.media.gif} alt={`${exercise.name} 动作演示`} loading="lazy" />
+                      <span><strong>{exercise.name}</strong><em>{exercise.part} · {exercise.equipment || "通用"}</em></span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </article>
 
@@ -734,4 +783,28 @@ function numberFromInput(value: string, min: number, max: number): number {
 
 function roundMacro(value: number): number {
   return Math.round(value * 10) / 10;
+}
+
+function makeExerciseFromCatalog(exercise: CatalogExercise, setCount: number) {
+  const defaultSet = exercise.sets?.[0] ?? [0, 10];
+  const weightKg = Number(defaultSet[0] || 0);
+  const reps = Number(defaultSet[1] || 10);
+  return {
+    id: `${exercise.id}-${crypto.randomUUID()}`,
+    exerciseName: exercise.name,
+    muscleGroup: exercise.part,
+    restSeconds: weightKg ? 90 : 60,
+    steps: exercise.steps.slice(0, 5),
+    media: { gif: exercise.media.gif, thumbnail: exercise.media.thumbnail || "" },
+    sets: Array.from({ length: setCount }, (_, index) => ({
+      id: `${exercise.id}-${crypto.randomUUID()}-${index + 1}`,
+      exerciseId: exercise.id,
+      exerciseName: exercise.name,
+      muscleGroup: exercise.part,
+      setIndex: index + 1,
+      weightKg,
+      reps,
+      completed: false
+    }))
+  };
 }
