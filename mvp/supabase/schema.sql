@@ -40,6 +40,12 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.app_snapshots (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  state jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.daily_records (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -126,6 +132,7 @@ create table if not exists public.training_sets (
 alter table public.profiles enable row level security;
 alter table public.food_catalog enable row level security;
 alter table public.exercise_catalog enable row level security;
+alter table public.app_snapshots enable row level security;
 alter table public.daily_records enable row level security;
 alter table public.meal_templates enable row level security;
 alter table public.meal_entries enable row level security;
@@ -135,6 +142,9 @@ alter table public.training_sets enable row level security;
 
 create policy "profiles are owned by user" on public.profiles
   for all using (auth.uid() = id) with check (auth.uid() = id);
+
+create policy "app snapshots are owned by user" on public.app_snapshots
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 create policy "food catalog is readable" on public.food_catalog
   for select using (true);

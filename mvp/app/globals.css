@@ -38,13 +38,30 @@ h1, h2, h3, p { margin: 0; }
   position: sticky;
   top: 0;
   z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
   margin: -16px -12px 12px;
   padding: 16px 12px 12px;
   background: rgba(243, 245, 248, .94);
   backdrop-filter: blur(18px);
 }
+.topbar div { min-width: 0; }
 .topbar h1 { font-size: 30px; line-height: 1.05; letter-spacing: 0; }
 .topbar p { margin-top: 7px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.sync-pill {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 7px 9px;
+  color: #555b66;
+  font-size: 11px;
+  font-weight: 900;
+  background: #fff;
+}
+.sync-pill.cloud { color: #16784f; background: #eaf8f1; border-color: #ccebd9; }
+.sync-pill.local-fallback { color: #806014; background: #fff8df; border-color: #f0dfa4; }
 
 .page { display: grid; gap: 12px; }
 .card, .hero-card {
