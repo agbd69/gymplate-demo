@@ -5,6 +5,7 @@ const port = 4185;
 const cwd = new URL("../mvp/", import.meta.url);
 const child = spawn("pnpm", ["run", "dev", "--hostname", "127.0.0.1", "--port", String(port)], {
   cwd,
+  env: { ...process.env, OPENAI_API_KEY: "invalid-test-key" },
   stdio: ["ignore", "pipe", "pipe"]
 });
 
@@ -20,6 +21,7 @@ try {
   const html = await page.text();
   assert.match(html, /GymPlate/);
 
+  const parseStarted = Date.now();
   const api = await fetch(`http://127.0.0.1:${port}/api/parse-meal`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -27,6 +29,8 @@ try {
   });
   assert.equal(api.status, 200);
   const payload = await api.json();
+  assert(Date.now() - parseStarted < 8000, "meal parser should not hang when AI parsing is unavailable");
+  assert.equal(payload.source, "rules-fallback");
   const rice = payload.meals.find(item => item.foodName === "米饭");
   const chicken = payload.meals.find(item => item.foodName === "鸡胸肉");
   assert.equal(rice.grams, 500);

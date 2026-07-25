@@ -57,6 +57,7 @@ assert(page.includes("auth-strip"), "page should include an auth entry point");
 assert(page.includes("sendMagicLink"), "page should let users request an email login link");
 assert(page.includes("signOut"), "page should let signed-in users sign out");
 assert(page.includes('fetch("/api/parse-meal"'), "meal parsing should go through the API route before falling back");
+assert(page.includes("createTimeoutSignal"), "meal parsing should time out instead of locking the input");
 assert(page.includes("保存这一餐为常用餐"), "food page should let users save repeated meals");
 assert(page.includes("deleteTemplate"), "food page should let users delete repeated meals");
 assert(page.includes("addSet("), "training page should support adding sets");
@@ -93,6 +94,7 @@ assert(!nutrition.includes("calories: 450"), "unknown foods should not default t
 const route = await read("mvp/app/api/parse-meal/route.ts");
 assert(route.includes("normalizeMeals"), "parse API should normalize OpenAI output");
 assert(route.includes("crypto.randomUUID()"), "parse API should attach stable ids for rendered meal rows");
+assert(route.includes("AbortSignal.timeout"), "parse API should not wait indefinitely for OpenAI");
 assert(storage.includes("createOptionalClient"), "storage adapter should use Supabase when configured");
 assert(storage.includes(".from(\"app_snapshots\")"), "storage adapter should sync app snapshots to Supabase");
 assert(storage.includes("window.localStorage.setItem"), "storage adapter should preserve local fallback persistence");

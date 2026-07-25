@@ -102,6 +102,7 @@ export default function HomePage() {
     try {
       const response = await fetch("/api/parse-meal", {
         method: "POST",
+        signal: createTimeoutSignal(6000),
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: mealText.trim(), slot })
       });
@@ -744,6 +745,15 @@ function recalcMeal(entry: MealEntry, patch: Partial<MealEntry>, id: string): Me
 function progress(value: number, target: number): string {
   if (!target) return "0%";
   return `${Math.min(100, Math.max(0, Math.round(value / target * 100)))}%`;
+}
+
+function createTimeoutSignal(ms: number): AbortSignal {
+  if (typeof AbortSignal !== "undefined" && "timeout" in AbortSignal) {
+    return AbortSignal.timeout(ms);
+  }
+  const controller = new AbortController();
+  window.setTimeout(() => controller.abort(), ms);
+  return controller.signal;
 }
 
 function normalizeApiMeals(meals: unknown, fallbackSlot: MealSlot, rawText: string): MealEntry[] {
