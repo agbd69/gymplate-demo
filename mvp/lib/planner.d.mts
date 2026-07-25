@@ -18,4 +18,5 @@ export function makeProfileMetrics(profile: Profile): {
 export function makeWeeklyPlan(profile: Profile, options?: {
   exerciseCount?: number;
   setsPerExercise?: number;
+  trainingWeekdays?: number[];
 }): WeeklyPlanDay[];

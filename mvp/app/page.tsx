@@ -18,6 +18,16 @@ const slots: Array<{ id: MealSlot; label: string }> = [
   { id: "snack", label: "加餐" }
 ];
 
+const slotsOfWeek = [
+  { id: 1, label: "一" },
+  { id: 2, label: "二" },
+  { id: 3, label: "三" },
+  { id: 4, label: "四" },
+  { id: 5, label: "五" },
+  { id: 6, label: "六" },
+  { id: 7, label: "日" }
+];
+
 export default function HomePage() {
   const [page, setPage] = useState<"training" | "food" | "data">("food");
   const [profile, setProfile] = useState<Profile>(defaultProfile);
@@ -361,8 +371,28 @@ export default function HomePage() {
     setProfile(current => ({ ...current, ...patch }));
   }
 
+  function updateTrainingDays(value: number) {
+    updateProfile({ trainingDays: value });
+    setPlanSettings(current => ({
+      ...current,
+      trainingWeekdays: current.trainingWeekdays.slice(0, value)
+    }));
+  }
+
   function updatePlanSettings(patch: Partial<PlanSettings>) {
     setPlanSettings(current => ({ ...current, ...patch }));
+  }
+
+  function toggleTrainingWeekday(weekday: number) {
+    setPlanSettings(current => {
+      const selected = current.trainingWeekdays.includes(weekday)
+        ? current.trainingWeekdays.filter(day => day !== weekday)
+        : [...current.trainingWeekdays, weekday].sort((a, b) => a - b);
+      return {
+        ...current,
+        trainingWeekdays: selected.slice(0, profile.trainingDays)
+      };
+    });
   }
 
   function applyGeneratedPlan() {
@@ -433,7 +463,7 @@ export default function HomePage() {
               <button className="btn dark" onClick={applyGeneratedPlan}>生成</button>
             </div>
             <div className="field-grid">
-              <label>每周训练<input inputMode="numeric" value={profile.trainingDays} onChange={event => updateProfile({ trainingDays: numberFromInput(event.target.value, 1, 7) })} /></label>
+              <label>每周训练<input inputMode="numeric" value={profile.trainingDays} onChange={event => updateTrainingDays(numberFromInput(event.target.value, 1, 7))} /></label>
               <label>每天动作<input inputMode="numeric" value={planSettings.exerciseCount} onChange={event => updatePlanSettings({ exerciseCount: numberFromInput(event.target.value, 2, 8) })} /></label>
               <label>每动作组数<input inputMode="numeric" value={planSettings.setsPerExercise} onChange={event => updatePlanSettings({ setsPerExercise: numberFromInput(event.target.value, 1, 6) })} /></label>
               <label>目标
@@ -443,6 +473,17 @@ export default function HomePage() {
                   <option value="bulk">增肌</option>
                 </select>
               </label>
+            </div>
+            <div className="weekday-picker" aria-label="固定训练日">
+              {slotsOfWeek.map(day => (
+                <button
+                  key={day.id}
+                  className={planSettings.trainingWeekdays.includes(day.id) ? "active" : ""}
+                  onClick={() => toggleTrainingWeekday(day.id)}
+                >
+                  {day.label}
+                </button>
+              ))}
             </div>
             <div className="week-strip">
               {weeklyPlan.map(day => (

@@ -344,6 +344,27 @@ h1, h2, h3, p { margin: 0; }
   background: #fff;
 }
 
+.weekday-picker {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.weekday-picker button {
+  min-width: 0;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: #6c7280;
+  font-size: 13px;
+  font-weight: 900;
+  background: #fff;
+}
+.weekday-picker button.active {
+  color: #fff;
+  border-color: #111318;
+  background: #111318;
+}
+
 .week-strip {
   display: grid;
   grid-template-columns: repeat(7, 1fr);

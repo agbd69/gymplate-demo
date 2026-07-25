@@ -37,6 +37,7 @@ export type Profile = {
 export type PlanSettings = {
   exerciseCount: number;
   setsPerExercise: number;
+  trainingWeekdays: number[];
 };
 
 export type WorkoutSet = {

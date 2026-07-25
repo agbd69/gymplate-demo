@@ -76,7 +76,7 @@ function parseStoredState(value: unknown, fallback: StoredState): StoredState | 
     profile: state.profile ?? fallback.profile,
     record: state.record,
     templates: state.templates,
-    planSettings: state.planSettings ?? fallback.planSettings,
+    planSettings: { ...fallback.planSettings, ...(state.planSettings ?? {}) },
     history: Array.isArray(state.history) ? state.history : fallback.history
   };
 }

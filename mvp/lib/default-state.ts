@@ -13,7 +13,8 @@ export const defaultProfile: Profile = {
 
 export const defaultPlanSettings: PlanSettings = {
   exerciseCount: 4,
-  setsPerExercise: 3
+  setsPerExercise: 3,
+  trainingWeekdays: [1, 3, 5, 6]
 };
 
 export function defaultTemplates(): MealTemplate[] {

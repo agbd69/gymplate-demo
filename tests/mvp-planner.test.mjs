@@ -32,4 +32,12 @@ assert.equal(week.find(day => day.weekday === 1).exercises.some(exercise => exer
 const fourDayWeek = makeWeeklyPlan({ ...cutProfile, trainingDays: 4 }, { exerciseCount: 4, setsPerExercise: 3 });
 assert.deepEqual(fourDayWeek.filter(day => day.type === "training").map(day => day.weekday), [1, 2, 4, 6]);
 
+const customDaysWeek = makeWeeklyPlan({ ...cutProfile, trainingDays: 3 }, {
+  exerciseCount: 4,
+  setsPerExercise: 3,
+  trainingWeekdays: [2, 4, 6]
+});
+assert.deepEqual(customDaysWeek.filter(day => day.type === "training").map(day => day.weekday), [2, 4, 6]);
+assert.equal(customDaysWeek.find(day => day.weekday === 1).type, "rest");
+
 console.log("mvp planner checks passed");

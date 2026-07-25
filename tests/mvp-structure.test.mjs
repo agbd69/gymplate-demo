@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
 
-const [pkg, schema, seed, page, layout, manifest, searchRoute, exerciseRoute, storage, auth, planner, history, foodSearch, exerciseSearch, nutrition, types, vercel, deployment] = await Promise.all([
+const [pkg, schema, seed, page, layout, manifest, searchRoute, exerciseRoute, storage, auth, planner, history, foodSearch, exerciseSearch, nutrition, types, vercel, config, deployment] = await Promise.all([
   read("mvp/package.json"),
   read("mvp/supabase/schema.sql"),
   read("mvp/supabase/seed-open-data.sql"),
@@ -22,6 +22,7 @@ const [pkg, schema, seed, page, layout, manifest, searchRoute, exerciseRoute, st
   read("mvp/lib/nutrition.ts"),
   read("mvp/lib/types.ts"),
   read("mvp/vercel.json"),
+  read("mvp/next.config.mjs"),
   read("mvp/DEPLOYMENT.md")
 ]);
 
@@ -80,6 +81,9 @@ assert(page.includes("history-list"), "data page should show recent history reco
 assert(page.includes("基础设置"), "data page should include profile setup controls");
 assert(page.includes("计划生成器"), "training page should include a plan generator");
 assert(page.includes("makeWeeklyPlan"), "page should generate weekly training plans from profile settings");
+assert(page.includes("trainingWeekdays"), "training page should let users choose fixed weekly training days");
+assert(page.includes("toggleTrainingWeekday"), "training page should support toggling training weekdays");
+assert(page.includes("updateTrainingDays"), "training page should keep selected weekdays aligned with weekly training count");
 assert(page.includes("exercise-guide"), "training cards should show exercise guidance");
 assert(page.includes("动作演示"), "training cards should render GIF demos with useful alt text");
 assert(page.includes("searchExercises"), "training page should search the exercise catalog");
@@ -88,6 +92,7 @@ assert(page.includes("EditableMealRow"), "meal macros should be editable by the 
 
 assert(types.includes("ExercisePlan"), "training data should model exercises with nested sets");
 assert(types.includes("PlanSettings"), "training preferences should be persisted as plan settings");
+assert(types.includes("trainingWeekdays"), "training preferences should persist selected weekdays");
 assert(planner.includes("makeProfileMetrics"), "planner should compute BMI, BMR, and macro targets");
 assert(planner.includes("makeWeeklyPlan"), "planner should generate weekly plans");
 assert(history.includes("summarizeRecord"), "history helper should summarize daily records");
@@ -106,6 +111,7 @@ assert(route.includes("AbortSignal.timeout"), "parse API should not wait indefin
 assert(storage.includes("createOptionalClient"), "storage adapter should use Supabase when configured");
 assert(storage.includes(".from(\"app_snapshots\")"), "storage adapter should sync app snapshots to Supabase");
 assert(storage.includes("window.localStorage.setItem"), "storage adapter should preserve local fallback persistence");
+assert(storage.includes("...fallback.planSettings"), "storage adapter should migrate older plan settings with new defaults");
 assert(auth.includes("signInWithOtp"), "auth helper should support email magic link login");
 assert(auth.includes("onAuthStateChange"), "auth helper should react to login/logout changes");
 assert(seed.includes("insert into public.food_catalog"), "seed should insert foods into Supabase");
@@ -115,6 +121,7 @@ assert(seed.includes("hasaneyldrm/exercises-dataset"), "seed should preserve the
 assert(seed.includes(".gif"), "seed should contain exercise GIF URLs");
 assert(vercel.includes('"framework": "nextjs"'), "Vercel config should target Next.js");
 assert(vercel.includes("pnpm run build"), "Vercel config should build the MVP");
+assert(config.includes("ignoreDuringBuilds"), "Next build should skip interactive lint when no eslint config exists");
 assert(deployment.includes("Root Directory: `mvp`"), "deployment docs should explain the Vercel root directory");
 assert(deployment.includes("Supabase Auth"), "deployment docs should explain auth redirect setup");
 assert(layout.includes("appleWebApp"), "layout metadata should support adding the MVP to iOS home screen");

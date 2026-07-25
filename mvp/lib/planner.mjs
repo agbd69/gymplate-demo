@@ -55,7 +55,7 @@ export function makeProfileMetrics(profile) {
 export function makeWeeklyPlan(profile, options = {}) {
   const exerciseCount = clamp(Math.round(options.exerciseCount ?? 4), 2, 8);
   const setsPerExercise = clamp(Math.round(options.setsPerExercise ?? 3), 1, 6);
-  const weekdays = (weekdayTemplates[profile.trainingDays] ?? weekdayTemplates[3]).flat();
+  const weekdays = normalizeWeekdays(options.trainingWeekdays, profile.trainingDays);
   return Array.from({ length: 7 }, (_, index) => {
     const weekday = index + 1;
     if (!weekdays.includes(weekday)) return { weekday, type: "rest", exercises: [] };
@@ -65,6 +65,15 @@ export function makeWeeklyPlan(profile, options = {}) {
       exercises: pickExercises(profile.goal, weekday, exerciseCount).map(item => toExercise(item, setsPerExercise))
     };
   });
+}
+
+function normalizeWeekdays(value, trainingDays) {
+  const fallback = (weekdayTemplates[trainingDays] ?? weekdayTemplates[3]).flat();
+  if (!Array.isArray(value)) return fallback;
+  const days = [...new Set(value.map(day => Number(day)).filter(day => Number.isInteger(day) && day >= 1 && day <= 7))]
+    .sort((a, b) => a - b)
+    .slice(0, clamp(Math.round(trainingDays ?? 3), 1, 7));
+  return days.length ? days : fallback;
 }
 
 function pickExercises(goal, weekday, count) {
