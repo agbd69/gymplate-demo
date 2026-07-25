@@ -7,6 +7,7 @@ import { defaultPlanSettings, defaultProfile, defaultRecord, defaultTemplates } 
 import { loadStoredState, saveStoredState, type StorageStatus } from "@/lib/app-storage";
 import { getAuthState, initialAuthState, listenForAuthChanges, sendMagicLink, signOut, type AuthState } from "@/lib/auth";
 import { makeProfileMetrics, makeWeeklyPlan } from "@/lib/planner.mjs";
+import { addHistoryRecord, trendFromHistory, type HistorySummary } from "@/lib/history.mjs";
 
 const slots: Array<{ id: MealSlot; label: string }> = [
   { id: "breakfast", label: "早餐" },
@@ -21,6 +22,7 @@ export default function HomePage() {
   const [planSettings, setPlanSettings] = useState<PlanSettings>(defaultPlanSettings);
   const [templates, setTemplates] = useState<MealTemplate[]>(() => defaultTemplates());
   const [record, setRecord] = useState<DailyRecord>(() => defaultRecord());
+  const [history, setHistory] = useState<HistorySummary[]>([]);
   const [slot, setSlot] = useState<MealSlot>("lunch");
   const [mealText, setMealText] = useState("");
   const [pending, setPending] = useState<MealEntry[]>([]);
@@ -36,6 +38,7 @@ export default function HomePage() {
 
   const target = useMemo(() => makeProfileMetrics(profile), [profile]);
   const weeklyPlan = useMemo(() => makeWeeklyPlan(profile, planSettings), [profile, planSettings]);
+  const trend = useMemo(() => trendFromHistory(history), [history]);
   const mealTotal = useMemo(() => totalMacros(record.meals), [record.meals]);
   const pendingTotal = useMemo(() => totalMacros(pending), [pending]);
   const remaining = target.calories - mealTotal.calories;
@@ -46,7 +49,7 @@ export default function HomePage() {
     let active = true;
     Promise.all([
       getAuthState(),
-      loadStoredState({ profile, record, templates, planSettings })
+      loadStoredState({ profile, record, templates, planSettings, history })
     ]).then(([auth, stored]) => {
       if (!active) return;
       setAuthState(auth);
@@ -54,16 +57,18 @@ export default function HomePage() {
       setRecord(stored.state.record);
       setTemplates(stored.state.templates);
       setPlanSettings(stored.state.planSettings);
+      setHistory(stored.state.history);
       setStorageStatus(stored.status);
       setHydrated(true);
     });
     const stop = listenForAuthChanges((auth) => {
       setAuthState(auth);
-      loadStoredState({ profile, record, templates, planSettings }).then(({ state, status }) => {
+      loadStoredState({ profile, record, templates, planSettings, history }).then(({ state, status }) => {
         setProfile(state.profile);
         setRecord(state.record);
         setTemplates(state.templates);
         setPlanSettings(state.planSettings);
+        setHistory(state.history);
         setStorageStatus(status);
       });
     });
@@ -76,10 +81,10 @@ export default function HomePage() {
   useEffect(() => {
     if (!hydrated) return;
     const timeout = window.setTimeout(() => {
-      saveStoredState({ profile, record, templates, planSettings }).then(setStorageStatus);
+      saveStoredState({ profile, record, templates, planSettings, history }).then(setStorageStatus);
     }, 250);
     return () => window.clearTimeout(timeout);
-  }, [hydrated, profile, record, templates, planSettings]);
+  }, [hydrated, profile, record, templates, planSettings, history]);
 
   async function parseMeal() {
     if (!mealText.trim()) return;
@@ -250,6 +255,10 @@ export default function HomePage() {
     if (!nextTrainingDay) return;
     setRecord(current => ({ ...current, exercises: nextTrainingDay.exercises }));
     setPage("training");
+  }
+
+  function settleToday() {
+    setHistory(current => addHistoryRecord(current, record));
   }
 
   return (
@@ -467,6 +476,7 @@ export default function HomePage() {
               <h2>{record.date}</h2>
               <p>记录完整度：饮食 {record.meals.length ? "已填" : "未填"} · 训练 {completedSets.length ? "已练" : "未练"}</p>
             </div>
+            <button className="btn dark" onClick={settleToday}>保存今日到历史</button>
           </article>
 
           <article className="card stack">
@@ -520,6 +530,27 @@ export default function HomePage() {
             <MacroLine label="碳水进度" value={mealTotal.carbs} target={target.carbs} unit="g" />
             <MacroLine label="脂肪进度" value={mealTotal.fat} target={target.fat} unit="g" />
           </article>
+
+          <article className="card stack">
+            <div className="section-head compact">
+              <div>
+                <span className="label">趋势</span>
+                <h2>最近 {history.slice(-7).length || 0} 天</h2>
+              </div>
+            </div>
+            <Trend label="体重" points={trend.weight} unit="kg" />
+            <Trend label="热量" points={trend.calories} unit="kcal" />
+            <Trend label="训练容量" points={trend.volume} unit="kg" />
+            <div className="history-list">
+              {history.slice(-5).reverse().map(item => (
+                <div className="history-row" key={item.date}>
+                  <strong>{item.date}</strong>
+                  <span>{item.weightKg}kg · {item.calories}kcal · {Math.round(item.volume / 100) / 10}t</span>
+                </div>
+              ))}
+              {!history.length && <p className="hint">保存今日后，这里会显示体重、热量和训练容量趋势。</p>}
+            </div>
+          </article>
         </section>
       )}
 
@@ -566,6 +597,24 @@ function Summary({ label, value, sub }: { label: string; value: string; sub: str
       <span className="label">{label}</span>
       <strong>{value}</strong>
       <p>{sub}</p>
+    </div>
+  );
+}
+
+function Trend({ label, points, unit }: { label: string; points: Array<{ date: string; value: number }>; unit: string }) {
+  const max = Math.max(...points.map(point => point.value), 1);
+  const latest = points.at(-1);
+  return (
+    <div className="trend-card">
+      <div className="inline-total">
+        <span>{label}</span>
+        <strong>{latest ? `${latest.value}${unit}` : "暂无"}</strong>
+      </div>
+      <div className="spark-bars">
+        {(points.length ? points : [{ date: "empty", value: 0 }]).map(point => (
+          <i key={point.date} style={{ height: `${Math.max(8, Math.round(point.value / max * 100))}%` }} />
+        ))}
+      </div>
     </div>
   );
 }

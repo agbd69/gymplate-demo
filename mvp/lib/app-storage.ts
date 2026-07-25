@@ -1,4 +1,5 @@
 import type { DailyRecord, MealTemplate, PlanSettings, Profile } from "./types";
+import type { HistorySummary } from "./history.mjs";
 import { createOptionalClient } from "./supabase/client";
 
 export const appStorageKey = "gymplate-mvp-state-v1";
@@ -8,6 +9,7 @@ export type StoredState = {
   record: DailyRecord;
   templates: MealTemplate[];
   planSettings: PlanSettings;
+  history: HistorySummary[];
 };
 
 export type StorageStatus = {
@@ -74,6 +76,7 @@ function parseStoredState(value: unknown, fallback: StoredState): StoredState | 
     profile: state.profile ?? fallback.profile,
     record: state.record,
     templates: state.templates,
-    planSettings: state.planSettings ?? fallback.planSettings
+    planSettings: state.planSettings ?? fallback.planSettings,
+    history: Array.isArray(state.history) ? state.history : fallback.history
   };
 }
