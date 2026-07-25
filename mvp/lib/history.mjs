@@ -13,7 +13,8 @@ export function summarizeRecord(record) {
     completedSets: completed.length,
     steps: record.steps ?? 0,
     sleepHours: record.sleepHours ?? 0,
-    mood: record.mood ?? ""
+    mood: record.mood ?? "",
+    snapshot: cloneDailyRecord(record)
   };
 }
 
@@ -47,6 +48,9 @@ export function createNextDayRecord(record) {
 }
 
 export function restoreHistoryRecord(summary, currentRecord) {
+  if (summary?.snapshot) {
+    return cloneDailyRecord(summary.snapshot);
+  }
   return {
     ...currentRecord,
     date: summary.date,
@@ -56,6 +60,19 @@ export function restoreHistoryRecord(summary, currentRecord) {
     mood: summary.mood,
     meals: [],
     exercises: resetExercises(currentRecord.exercises ?? [])
+  };
+}
+
+function cloneDailyRecord(record) {
+  return {
+    ...record,
+    meals: (record.meals ?? []).map(meal => ({ ...meal })),
+    exercises: (record.exercises ?? []).map(exercise => ({
+      ...exercise,
+      steps: [...(exercise.steps ?? [])],
+      media: { ...(exercise.media ?? {}) },
+      sets: (exercise.sets ?? []).map(set => ({ ...set }))
+    }))
   };
 }
 

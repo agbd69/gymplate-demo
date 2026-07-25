@@ -840,7 +840,7 @@ export default function HomePage() {
               {history.slice(-5).reverse().map(item => (
                 <button className="history-row" key={item.date} onClick={() => restoreHistory(item)}>
                   <strong>{item.date}</strong>
-                  <span>{item.weightKg}kg · {item.calories}kcal · {Math.round(item.volume / 100) / 10}t</span>
+                  <span>{item.weightKg}kg · {item.calories}kcal · 恢复完整记录</span>
                 </button>
               ))}
               {!history.length && <p className="hint">保存今日后，这里会显示体重、热量和训练容量趋势。</p>}

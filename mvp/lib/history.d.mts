@@ -12,6 +12,7 @@ export type HistorySummary = {
   steps: number;
   sleepHours: number;
   mood: string;
+  snapshot?: DailyRecord;
 };
 
 export type TrendPoint = {
