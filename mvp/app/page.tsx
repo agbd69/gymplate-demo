@@ -58,6 +58,7 @@ export default function HomePage() {
 
   const target = useMemo(() => makeProfileMetrics(profile), [profile]);
   const weeklyPlan = useMemo(() => makeWeeklyPlan(profile, planSettings), [profile, planSettings]);
+  const todayTrainingDay = useMemo(() => weeklyPlan.find(day => day.weekday === weekdayFromDate(record.date)), [weeklyPlan, record.date]);
   const trend = useMemo(() => trendFromHistory(history), [history]);
   const mealTotal = useMemo(() => totalMacros(record.meals), [record.meals]);
   const pendingTotal = useMemo(() => totalMacros(pending), [pending]);
@@ -396,9 +397,7 @@ export default function HomePage() {
   }
 
   function applyGeneratedPlan() {
-    const nextTrainingDay = weeklyPlan.find(day => day.type === "training");
-    if (!nextTrainingDay) return;
-    setRecord(current => ({ ...current, exercises: nextTrainingDay.exercises }));
+    setRecord(current => ({ ...current, exercises: todayTrainingDay?.type === "training" ? todayTrainingDay.exercises : [] }));
     setPage("training");
   }
 
@@ -449,7 +448,7 @@ export default function HomePage() {
           <article className="hero-card">
             <div>
               <span className="label">今日训练</span>
-              <h2>胸背肩 · 固定周计划</h2>
+              <h2>{todayTrainingDay?.type === "training" ? "今日训练日" : "今日休息日"} · 固定周计划</h2>
               <p>{completedSets.length}/{record.exercises.flatMap(item => item.sets).length} 组完成 · 训练容量 {Math.round(volume / 100) / 10} t</p>
             </div>
           </article>
@@ -873,6 +872,12 @@ function cloneTemplateEntries(template: MealTemplate): MealEntry[] {
     id: `templateApplied-${template.id}-${crypto.randomUUID()}-${index}`,
     source: "user-template" as const
   }));
+}
+
+function weekdayFromDate(value: string): number {
+  const date = new Date(`${value}T12:00:00`);
+  const day = date.getDay();
+  return day === 0 ? 7 : day;
 }
 
 function progress(value: number, target: number): string {

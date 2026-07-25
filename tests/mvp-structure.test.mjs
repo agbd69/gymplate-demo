@@ -84,6 +84,9 @@ assert(page.includes("makeWeeklyPlan"), "page should generate weekly training pl
 assert(page.includes("trainingWeekdays"), "training page should let users choose fixed weekly training days");
 assert(page.includes("toggleTrainingWeekday"), "training page should support toggling training weekdays");
 assert(page.includes("updateTrainingDays"), "training page should keep selected weekdays aligned with weekly training count");
+assert(page.includes("weekdayFromDate"), "training plan generation should use the active record date");
+assert(page.includes("todayTrainingDay"), "training page should find the plan for the selected date");
+assert(page.includes("今日休息日"), "training page should communicate when selected date is a rest day");
 assert(page.includes("exercise-guide"), "training cards should show exercise guidance");
 assert(page.includes("动作演示"), "training cards should render GIF demos with useful alt text");
 assert(page.includes("searchExercises"), "training page should search the exercise catalog");
