@@ -11,6 +11,16 @@ import { addHistoryRecord, createNextDayRecord, restoreHistoryRecord, trendFromH
 import type { CatalogFood } from "@/lib/food-search.mjs";
 import type { CatalogExercise } from "@/lib/exercise-search.mjs";
 
+type SpeechRecognitionLike = {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((event: { results: ArrayLike<{ 0: { transcript: string } }> }) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+};
+
 const slots: Array<{ id: MealSlot; label: string }> = [
   { id: "breakfast", label: "早餐" },
   { id: "lunch", label: "午餐" },
@@ -50,6 +60,8 @@ export default function HomePage() {
   const [hydrated, setHydrated] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [parseError, setParseError] = useState("");
+  const [voiceMessage, setVoiceMessage] = useState("");
+  const [listening, setListening] = useState(false);
   const [storageStatus, setStorageStatus] = useState<StorageStatus>({ mode: "local", message: "准备保存" });
   const [authState, setAuthState] = useState<AuthState>(() => initialAuthState());
   const [email, setEmail] = useState("");
@@ -230,6 +242,44 @@ export default function HomePage() {
         ...defaults
       ]
     }));
+  }
+
+  function applySlotDefault(activeSlot: MealSlot) {
+    const template = templates.find(item => item.slot === activeSlot);
+    if (!template) return;
+    const entries = cloneTemplateEntries(template);
+    setRecord(current => ({
+      ...current,
+      meals: [
+        ...current.meals.filter(meal => !(meal.slot === activeSlot && meal.source === "user-template" && meal.id.includes("templateApplied"))),
+        ...entries
+      ]
+    }));
+  }
+
+  function startVoiceMealInput() {
+    const speechWindow = window as Window & {
+      SpeechRecognition?: new () => SpeechRecognitionLike;
+      webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+    };
+    const Recognition = speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
+    if (!Recognition) {
+      setVoiceMessage("当前浏览器不支持语音输入，可以用系统键盘的听写按钮。");
+      return;
+    }
+    const recognition = new Recognition();
+    recognition.lang = "zh-CN";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (event) => {
+      const transcript = event.results[0]?.[0]?.transcript?.trim();
+      if (transcript) setMealText(current => current ? `${current} ${transcript}` : transcript);
+    };
+    recognition.onerror = () => setVoiceMessage("语音识别失败，再试一次或直接输入。");
+    recognition.onend = () => setListening(false);
+    setVoiceMessage("");
+    setListening(true);
+    recognition.start();
   }
 
   function deleteTemplate(templateId: string) {
@@ -569,8 +619,38 @@ export default function HomePage() {
           <article className="card stack">
             <div className="section-head compact">
               <div>
+                <span className="label">今日餐盘</span>
+                <h2>默认先填，没吃就删</h2>
+              </div>
+              <button className="btn dark" onClick={applyDailyMealDefaults}>生成今日默认餐盘</button>
+            </div>
+            {slots.map(item => {
+              const meals = record.meals.filter(meal => meal.slot === item.id);
+              const slotTotal = totalMacros(meals);
+              const template = templates.find(candidate => candidate.slot === item.id);
+              return (
+                <div className="meal-group" key={item.id}>
+                  <div className="inline-total">
+                    <span>{item.label}</span>
+                    <strong>{meals.length ? `${slotTotal.calories} kcal` : "未记录"}</strong>
+                  </div>
+                  {meals.map(entry => (
+                    <EditableMealRow key={entry.id} entry={entry} onChange={patch => updateMeal(entry.id, patch)} onDelete={() => deleteMeal(entry.id)} />
+                  ))}
+                  {meals.length === 0 && template && (
+                    <button className="btn soft" onClick={() => applySlotDefault(item.id)}>填入默认{item.label}</button>
+                  )}
+                  {meals.length > 0 && <button className="btn soft" onClick={() => saveCurrentSlotAsTemplate(item.id)}>保存这一餐为常用餐</button>}
+                </div>
+              );
+            })}
+          </article>
+
+          <article className="card stack">
+            <div className="section-head compact">
+              <div>
                 <span className="label">快速记录</span>
-                <h2>一句话生成，确认才入账</h2>
+                <h2>说一句或打一行，确认才入账</h2>
               </div>
             </div>
             <select className="select" value={slot} onChange={event => setSlot(event.target.value as MealSlot)}>
@@ -579,10 +659,13 @@ export default function HomePage() {
             <textarea className="textarea" value={mealText} onChange={event => setMealText(event.target.value)} placeholder="例如：午餐250克米饭150克鸡胸肉，或者 两个鸡蛋一杯牛奶" />
             <div className="action-row">
               <button className="btn primary" onClick={parseMeal} disabled={parsing}>{parsing ? "正在解析" : "生成待确认"}</button>
-              <button className="btn soft" onClick={addManualPendingMeal}>手动补一条</button>
+              <button className="btn soft" onClick={startVoiceMealInput} disabled={listening}>{listening ? "正在听" : "语音输入"}</button>
             </div>
+            {voiceMessage && <p className="hint">{voiceMessage}</p>}
             {parseError && <p className="hint">{parseError}</p>}
-            <div className="catalog-search">
+            <button className="btn soft" onClick={addManualPendingMeal}>手动补一条</button>
+            <details className="catalog-search">
+              <summary>精确查食物库</summary>
               <div className="action-row compact">
                 <input value={foodQuery} onChange={event => setFoodQuery(event.target.value)} placeholder="查食物库，如 米饭 / 鸡胸" />
                 <input inputMode="decimal" value={foodGrams} onChange={event => setFoodGrams(numberFromInput(event.target.value, 1, 5000))} aria-label="食物克数" />
@@ -598,7 +681,7 @@ export default function HomePage() {
                   ))}
                 </div>
               )}
-            </div>
+            </details>
             {pending.length > 0 && (
               <div className="stack">
                 <div className="inline-total">
@@ -624,7 +707,6 @@ export default function HomePage() {
                 <span className="label">常用餐</span>
                 <h2>每天重复的饭，点一次加入</h2>
               </div>
-              <button className="btn dark" onClick={applyDailyMealDefaults}>生成今日默认餐盘</button>
             </div>
             <div className="slot-tabs">
               {slots.map(item => (
@@ -673,31 +755,6 @@ export default function HomePage() {
                 );
               })}
             </div>
-          </article>
-
-          <article className="card stack">
-            <div className="section-head compact">
-              <div>
-                <span className="label">今日餐盘</span>
-                <h2>可删除，也可修正营养</h2>
-              </div>
-            </div>
-            {slots.map(item => {
-              const meals = record.meals.filter(meal => meal.slot === item.id);
-              const slotTotal = totalMacros(meals);
-              return (
-                <div className="meal-group" key={item.id}>
-                  <div className="inline-total">
-                    <span>{item.label}</span>
-                    <strong>{meals.length ? `${slotTotal.calories} kcal` : "未记录"}</strong>
-                  </div>
-                  {meals.map(entry => (
-                    <EditableMealRow key={entry.id} entry={entry} onChange={patch => updateMeal(entry.id, patch)} onDelete={() => deleteMeal(entry.id)} />
-                  ))}
-                  {meals.length > 0 && <button className="btn soft" onClick={() => saveCurrentSlotAsTemplate(item.id)}>保存这一餐为常用餐</button>}
-                </div>
-              );
-            })}
           </article>
         </section>
       )}

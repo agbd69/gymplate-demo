@@ -1,4 +1,4 @@
-import { exerciseDataset } from "../../data/exercises.mjs";
+import { exerciseDataset } from "../data/exercises.mjs";
 
 export function searchExerciseCatalog(query, limit = 10) {
   const keyword = String(query || "").trim().toLowerCase();

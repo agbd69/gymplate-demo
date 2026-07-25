@@ -1,4 +1,4 @@
-import { foodDataset } from "../../data/foods.mjs";
+import { foodDataset } from "../data/foods.mjs";
 
 export function searchFoodCatalog(query, limit = 10) {
   const keyword = String(query || "").trim().toLowerCase();

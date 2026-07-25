@@ -62,7 +62,11 @@ assert(page.includes("createTimeoutSignal"), "meal parsing should time out inste
 assert(page.includes("保存这一餐为常用餐"), "food page should let users save repeated meals");
 assert(page.includes("生成今日默认餐盘"), "food page should apply repeated meals as a daily default plate");
 assert(page.includes("applyDailyMealDefaults"), "food page should have one action that fills today's meals from templates");
+assert(page.includes("applySlotDefault"), "food page should let users fill one meal slot from its default template");
 assert(page.includes("templateApplied"), "daily default plate should be idempotent instead of duplicating meals");
+assert(page.includes("startVoiceMealInput"), "food page should expose a voice-first meal input helper");
+assert(page.includes("webkitSpeechRecognition"), "voice input should support mobile Web Speech implementations");
+assert(page.includes("精确查食物库"), "food catalog search should be tucked behind a secondary control");
 assert(page.includes("deleteTemplate"), "food page should let users delete repeated meals");
 assert(page.includes("editingTemplateId"), "food page should let users open a repeated meal editor");
 assert(page.includes("updateTemplateEntry"), "food page should let users correct saved meal macros");

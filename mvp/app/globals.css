@@ -246,6 +246,20 @@ h1, h2, h3, p { margin: 0; }
   padding: 10px;
   background: #fbfcfe;
 }
+.catalog-search summary {
+  list-style: none;
+  color: #383d46;
+  font-size: 13px;
+  font-weight: 900;
+}
+.catalog-search summary::-webkit-details-marker { display: none; }
+.catalog-search summary::after {
+  content: "+";
+  float: right;
+  color: var(--muted);
+  font-weight: 900;
+}
+.catalog-search[open] summary::after { content: "-"; }
 .catalog-search input {
   width: 100%;
   border: 1px solid var(--line);

@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { exerciseDataset } from "../../data/exercises.mjs";
-import { foodDataset } from "../../data/foods.mjs";
+import { exerciseDataset } from "../data/exercises.mjs";
+import { foodDataset } from "../data/foods.mjs";
 
 const outDir = path.resolve(import.meta.dirname, "../supabase");
 const outFile = path.join(outDir, "seed-open-data.sql");
