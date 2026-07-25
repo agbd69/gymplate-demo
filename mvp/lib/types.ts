@@ -55,6 +55,11 @@ export type ExercisePlan = {
   exerciseName: string;
   muscleGroup: string;
   restSeconds: number;
+  steps: string[];
+  media: {
+    gif: string;
+    thumbnail?: string;
+  };
   sets: WorkoutSet[];
 };
 

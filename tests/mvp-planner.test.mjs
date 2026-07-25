@@ -23,6 +23,8 @@ assert.equal(week.length, 7);
 assert.deepEqual(week.filter(day => day.type === "training").map(day => day.weekday), [1, 3, 5]);
 assert.equal(week.find(day => day.weekday === 1).exercises.length, 6);
 assert.equal(week.find(day => day.weekday === 1).exercises.every(exercise => exercise.sets.length === 4), true);
+assert.equal(week.find(day => day.weekday === 1).exercises.every(exercise => exercise.media?.gif?.endsWith(".gif")), true);
+assert.equal(week.find(day => day.weekday === 1).exercises.every(exercise => exercise.steps.length >= 3), true);
 assert.equal(week.find(day => day.weekday === 2).type, "rest");
 assert.equal(week.find(day => day.weekday === 1).exercises.some(exercise => exercise.muscleGroup === "胸"), true);
 assert.equal(week.find(day => day.weekday === 1).exercises.some(exercise => exercise.muscleGroup === "背"), true);

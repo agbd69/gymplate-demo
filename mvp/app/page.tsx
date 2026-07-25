@@ -329,6 +329,14 @@ export default function HomePage() {
                 </div>
                 <button className="icon-btn" onClick={() => addSet(exercise.id)} aria-label="添加一组">+</button>
               </div>
+              {exercise.media?.gif && (
+                <div className="exercise-guide">
+                  <img src={exercise.media.gif} alt={`${exercise.exerciseName} 动作演示`} loading="lazy" />
+                  <ol>
+                    {exercise.steps.slice(0, 3).map(step => <li key={step}>{step}</li>)}
+                  </ol>
+                </div>
+              )}
               <div className="set-head">
                 <span>组</span>
                 <span>重量 kg</span>

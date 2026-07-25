@@ -56,6 +56,8 @@ assert(page.includes("身体日志"), "data page should include editable body lo
 assert(page.includes("基础设置"), "data page should include profile setup controls");
 assert(page.includes("计划生成器"), "training page should include a plan generator");
 assert(page.includes("makeWeeklyPlan"), "page should generate weekly training plans from profile settings");
+assert(page.includes("exercise-guide"), "training cards should show exercise guidance");
+assert(page.includes("动作演示"), "training cards should render GIF demos with useful alt text");
 assert(page.includes("EditableMealRow"), "meal macros should be editable by the user");
 
 assert(types.includes("ExercisePlan"), "training data should model exercises with nested sets");

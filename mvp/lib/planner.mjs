@@ -10,34 +10,34 @@ const weekdayTemplates = {
 
 const exercisePool = {
   cut: [
-    ["bench", "杠铃卧推", "胸", 45, 8],
-    ["row", "坐姿划船", "背", 50, 10],
-    ["squat", "史密斯深蹲", "腿", 55, 10],
-    ["press", "哑铃肩推", "肩", 18, 10],
-    ["pulldown", "高位下拉", "背", 45, 10],
-    ["lunge", "哑铃弓步蹲", "腿", 16, 10],
-    ["pushdown", "绳索下压", "臂", 25, 12],
-    ["plank", "平板支撑", "核心", 0, 45]
+    exercise("bench", "杠铃卧推", "胸", 45, 8, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0025-ROD1foV.gif"),
+    exercise("row", "坐姿划船", "背", 50, 10, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0861-fUBheHs.gif"),
+    exercise("squat", "史密斯深蹲", "腿", 55, 10, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0751-0teFYah.gif"),
+    exercise("press", "哑铃肩推", "肩", 18, 10, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0405-sYbBWyF.gif"),
+    exercise("pulldown", "高位下拉", "背", 45, 10, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0150-Poo2iz0.gif"),
+    exercise("lunge", "哑铃弓步蹲", "腿", 16, 10, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/1688-K9VL0Jq.gif"),
+    exercise("pushdown", "绳索下压", "臂", 25, 12, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0200-e9wXgkq.gif"),
+    exercise("plank", "平板支撑", "核心", 0, 45, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0463-GlAq7Bf.gif")
   ],
   bulk: [
-    ["bench", "杠铃卧推", "胸", 50, 6],
-    ["row", "杠铃划船", "背", 50, 8],
-    ["squat", "杠铃深蹲", "腿", 60, 6],
-    ["deadlift", "罗马尼亚硬拉", "腿", 60, 8],
-    ["press", "杠铃推举", "肩", 35, 6],
-    ["pulldown", "高位下拉", "背", 50, 8],
-    ["curl", "哑铃弯举", "臂", 14, 10],
-    ["raise", "侧平举", "肩", 8, 12]
+    exercise("bench", "杠铃卧推", "胸", 50, 6, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0025-ROD1foV.gif"),
+    exercise("row", "杠铃划船", "背", 50, 8, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0027-Lil7ZJV.gif"),
+    exercise("squat", "杠铃深蹲", "腿", 60, 6, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0043-PAdzXLH.gif"),
+    exercise("deadlift", "罗马尼亚硬拉", "腿", 60, 8, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0085-RROZF93.gif"),
+    exercise("press", "杠铃推举", "肩", 35, 6, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0041-aNoPwDB.gif"),
+    exercise("pulldown", "高位下拉", "背", 50, 8, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0150-Poo2iz0.gif"),
+    exercise("curl", "哑铃弯举", "臂", 14, 10, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0031-25GPyDY.gif"),
+    exercise("raise", "侧平举", "肩", 8, 12, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0334-EWKlMpZ.gif")
   ],
   maintain: [
-    ["bench", "哑铃卧推", "胸", 22, 10],
-    ["row", "坐姿划船", "背", 45, 10],
-    ["legpress", "腿举", "腿", 80, 10],
-    ["press", "哑铃肩推", "肩", 16, 10],
-    ["pulldown", "高位下拉", "背", 42, 10],
-    ["pushup", "俯卧撑", "胸", 0, 12],
-    ["pushdown", "绳索下压", "臂", 22, 12],
-    ["crunch", "卷腹", "核心", 0, 15]
+    exercise("bench", "哑铃卧推", "胸", 22, 10, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0289-oUbuLU8.gif"),
+    exercise("row", "坐姿划船", "背", 45, 10, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0861-fUBheHs.gif"),
+    exercise("legpress", "腿举", "腿", 80, 10, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0739-OBcc7eM.gif"),
+    exercise("press", "哑铃肩推", "肩", 16, 10, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0405-sYbBWyF.gif"),
+    exercise("pulldown", "高位下拉", "背", 42, 10, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0150-Poo2iz0.gif"),
+    exercise("pushup", "俯卧撑", "胸", 0, 12, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0662-3pJfPDZ.gif"),
+    exercise("pushdown", "绳索下压", "臂", 22, 12, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0200-e9wXgkq.gif"),
+    exercise("crunch", "卷腹", "核心", 0, 15, "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0274-sh6kzMe.gif")
   ]
 };
 
@@ -74,22 +74,39 @@ function pickExercises(goal, weekday, count) {
 }
 
 function toExercise(item, setCount) {
-  const [id, exerciseName, muscleGroup, weightKg, reps] = item;
+  return {
+    id: item.id,
+    exerciseName: item.exerciseName,
+    muscleGroup: item.muscleGroup,
+    restSeconds: item.weightKg ? 90 : 60,
+    steps: item.steps,
+    media: { gif: item.gif },
+    sets: Array.from({ length: setCount }, (_, index) => ({
+      id: `${item.id}-${index + 1}`,
+      exerciseId: item.id,
+      exerciseName: item.exerciseName,
+      muscleGroup: item.muscleGroup,
+      setIndex: index + 1,
+      weightKg: item.weightKg,
+      reps: item.reps,
+      completed: false
+    }))
+  };
+}
+
+function exercise(id, exerciseName, muscleGroup, weightKg, reps, gif) {
   return {
     id,
     exerciseName,
     muscleGroup,
-    restSeconds: weightKg ? 90 : 60,
-    sets: Array.from({ length: setCount }, (_, index) => ({
-      id: `${id}-${index + 1}`,
-      exerciseId: id,
-      exerciseName,
-      muscleGroup,
-      setIndex: index + 1,
-      weightKg,
-      reps,
-      completed: false
-    }))
+    weightKg,
+    reps,
+    gif,
+    steps: [
+      "先用较轻重量热身，确认动作轨迹稳定。",
+      "保持核心收紧，发力过程不要借力甩动。",
+      "离心阶段放慢，顶端或底端短暂停顿后再进入下一次。"
+    ]
   };
 }
 
