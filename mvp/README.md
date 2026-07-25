@@ -58,6 +58,10 @@ npm test
 npm run test:mvp-runtime
 ```
 
+## 部署
+
+见 [DEPLOYMENT.md](DEPLOYMENT.md)。当前建议部署到 Vercel，Root Directory 设为 `mvp`。
+
 ## 下一步
 
 1. 部署到 Vercel/Sites，并配置 Supabase Redirect URL。

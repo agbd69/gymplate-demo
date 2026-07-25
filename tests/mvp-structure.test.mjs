@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
 
-const [pkg, schema, seed, page, storage, auth, nutrition, types] = await Promise.all([
+const [pkg, schema, seed, page, storage, auth, nutrition, types, vercel, deployment] = await Promise.all([
   read("mvp/package.json"),
   read("mvp/supabase/schema.sql"),
   read("mvp/supabase/seed-open-data.sql"),
@@ -12,7 +12,9 @@ const [pkg, schema, seed, page, storage, auth, nutrition, types] = await Promise
   read("mvp/lib/app-storage.ts"),
   read("mvp/lib/auth.ts"),
   read("mvp/lib/nutrition.ts"),
-  read("mvp/lib/types.ts")
+  read("mvp/lib/types.ts"),
+  read("mvp/vercel.json"),
+  read("mvp/DEPLOYMENT.md")
 ]);
 
 const packageJson = JSON.parse(pkg);
@@ -66,5 +68,9 @@ assert(seed.includes("insert into public.exercise_catalog"), "seed should insert
 assert(seed.includes("Sanotsu/china-food-composition-data"), "seed should preserve the Chinese food source");
 assert(seed.includes("hasaneyldrm/exercises-dataset"), "seed should preserve the exercise source");
 assert(seed.includes(".gif"), "seed should contain exercise GIF URLs");
+assert(vercel.includes('"framework": "nextjs"'), "Vercel config should target Next.js");
+assert(vercel.includes("pnpm run build"), "Vercel config should build the MVP");
+assert(deployment.includes("Root Directory: `mvp`"), "deployment docs should explain the Vercel root directory");
+assert(deployment.includes("Supabase Auth"), "deployment docs should explain auth redirect setup");
 
 console.log("mvp-structure tests passed");
