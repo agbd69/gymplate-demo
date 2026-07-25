@@ -60,6 +60,11 @@ assert(page.includes('fetch("/api/parse-meal"'), "meal parsing should go through
 assert(page.includes("createTimeoutSignal"), "meal parsing should time out instead of locking the input");
 assert(page.includes("保存这一餐为常用餐"), "food page should let users save repeated meals");
 assert(page.includes("deleteTemplate"), "food page should let users delete repeated meals");
+assert(page.includes("editingTemplateId"), "food page should let users open a repeated meal editor");
+assert(page.includes("updateTemplateEntry"), "food page should let users correct saved meal macros");
+assert(page.includes("addManualTemplateEntry"), "food page should let users add foods to saved meal templates");
+assert(page.includes("deleteTemplateEntry"), "food page should let users remove foods from saved meal templates");
+assert(page.includes("保存常用餐修改"), "food page should expose a clear save action for repeated meal edits");
 assert(page.includes("addSet("), "training page should support adding sets");
 assert(page.includes("deleteSet("), "training page should support deleting sets");
 assert(page.includes("身体日志"), "data page should include editable body log inputs");

@@ -36,6 +36,7 @@ export default function HomePage() {
   const [exerciseResults, setExerciseResults] = useState<CatalogExercise[]>([]);
   const [exerciseSearching, setExerciseSearching] = useState(false);
   const [selectedTemplateSlot, setSelectedTemplateSlot] = useState<MealSlot>("lunch");
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [parseError, setParseError] = useState("");
@@ -207,6 +208,46 @@ export default function HomePage() {
 
   function deleteTemplate(templateId: string) {
     setTemplates(current => current.filter(template => template.id !== templateId));
+    setEditingTemplateId(current => current === templateId ? null : current);
+  }
+
+  function updateTemplate(templateId: string, patch: Partial<MealTemplate>) {
+    setTemplates(current => current.map(template => template.id === templateId ? { ...template, ...patch } : template));
+  }
+
+  function updateTemplateEntry(templateId: string, entryId: string, patch: Partial<MealEntry>) {
+    setTemplates(current => current.map(template => template.id === templateId
+      ? { ...template, entries: template.entries.map(entry => recalcMeal(entry, patch, entryId)) }
+      : template));
+  }
+
+  function deleteTemplateEntry(templateId: string, entryId: string) {
+    setTemplates(current => current.map(template => template.id === templateId
+      ? { ...template, entries: template.entries.filter(entry => entry.id !== entryId) }
+      : template));
+  }
+
+  function addManualTemplateEntry(templateId: string) {
+    setTemplates(current => current.map(template => template.id === templateId
+      ? {
+          ...template,
+          entries: [
+            ...template.entries,
+            {
+              id: crypto.randomUUID(),
+              slot: template.slot,
+              foodName: "自定义食物",
+              grams: 100,
+              calories: 0,
+              protein: 0,
+              carbs: 0,
+              fat: 0,
+              source: "user-template",
+              macroEdited: true
+            }
+          ]
+        }
+      : template));
   }
 
   function addManualPendingMeal() {
@@ -537,13 +578,40 @@ export default function HomePage() {
             <div className="template-grid">
               {templates.filter(template => template.slot === selectedTemplateSlot).map(template => {
                 const total = totalMacros(template.entries);
+                const isEditingTemplate = editingTemplateId === template.id;
                 return (
                   <div className="template-card" key={template.id}>
-                    <strong>{template.name}</strong>
+                    {isEditingTemplate ? (
+                      <input
+                        className="template-name-input"
+                        aria-label="常用餐名称"
+                        value={template.name}
+                        onChange={event => updateTemplate(template.id, { name: event.target.value })}
+                      />
+                    ) : (
+                      <strong>{template.name}</strong>
+                    )}
                     <p>{total.calories} kcal · P {total.protein} / C {total.carbs} / F {total.fat}</p>
+                    {isEditingTemplate && (
+                      <div className="template-editor">
+                        {template.entries.map(entry => (
+                          <EditableMealRow
+                            key={entry.id}
+                            entry={entry}
+                            onChange={patch => updateTemplateEntry(template.id, entry.id, patch)}
+                            onDelete={() => deleteTemplateEntry(template.id, entry.id)}
+                          />
+                        ))}
+                        {!template.entries.length && <p className="hint">这个常用餐还没有食物，先添加一条再填。</p>}
+                        <button className="btn soft" onClick={() => addManualTemplateEntry(template.id)}>添加食物</button>
+                      </div>
+                    )}
                     <div className="action-row compact">
                       <button className="btn primary" onClick={() => addTemplate(template)}>加入今天</button>
-                      <button className="btn soft" onClick={() => deleteTemplate(template.id)}>删除</button>
+                      <button className="btn soft" onClick={() => setEditingTemplateId(isEditingTemplate ? null : template.id)}>
+                        {isEditingTemplate ? "保存常用餐修改" : "编辑"}
+                      </button>
+                      <button className="btn soft danger" onClick={() => deleteTemplate(template.id)}>删除</button>
                     </div>
                   </div>
                 );

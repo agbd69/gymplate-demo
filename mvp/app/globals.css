@@ -126,6 +126,7 @@ h1, h2, h3, p { margin: 0; }
 .btn.dark { color: #fff; background: #111318; }
 .btn.soft { color: #383d46; background: #fff; border: 1px solid var(--line); }
 .btn.primary { color: #fff; background: var(--blue); }
+.btn.danger { color: #be123c; border-color: #fecdd3; background: #fff7f8; }
 .btn:disabled { cursor: wait; opacity: .62; }
 .icon-btn {
   width: 42px;
@@ -207,7 +208,25 @@ h1, h2, h3, p { margin: 0; }
 .meal-card strong, .template-card strong, .summary-tile strong { display: block; font-size: 15px; line-height: 1.25; }
 .meal-card p, .template-card p, .summary-tile p { margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.45; }
 .template-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
-.template-card { text-align: left; }
+.template-card { display: grid; gap: 10px; text-align: left; }
+.template-name-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--ink);
+  background: #fff;
+}
+.template-editor {
+  display: grid;
+  gap: 8px;
+  padding-top: 2px;
+}
+.template-card .action-row.compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 .action-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -485,6 +504,7 @@ h1, h2, h3, p { margin: 0; }
   .grid-2, .field-grid { grid-template-columns: 1fr; }
   .auth-strip { grid-template-columns: 1fr; }
   .action-row { grid-template-columns: 1fr; }
+  .template-card .action-row.compact { grid-template-columns: 1fr; }
   .exercise-guide { grid-template-columns: 1fr; }
   .exercise-guide img { width: 100%; height: auto; aspect-ratio: 1.35; }
   .macro-edit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
