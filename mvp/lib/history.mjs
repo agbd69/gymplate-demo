@@ -34,6 +34,31 @@ export function trendFromHistory(history) {
   };
 }
 
+export function createNextDayRecord(record) {
+  return {
+    ...record,
+    date: nextDate(record.date),
+    meals: [],
+    exercises: resetExercises(record.exercises ?? []),
+    steps: 0,
+    sleepHours: record.sleepHours ?? 0,
+    mood: "正常"
+  };
+}
+
+export function restoreHistoryRecord(summary, currentRecord) {
+  return {
+    ...currentRecord,
+    date: summary.date,
+    weightKg: summary.weightKg,
+    steps: summary.steps,
+    sleepHours: summary.sleepHours,
+    mood: summary.mood,
+    meals: [],
+    exercises: resetExercises(currentRecord.exercises ?? [])
+  };
+}
+
 function total(entries) {
   return entries.reduce((sum, item) => ({
     calories: sum.calories + Number(item.calories || 0),
@@ -45,6 +70,20 @@ function total(entries) {
 
 function point(date, value) {
   return { date, value: Number(value || 0) };
+}
+
+function nextDate(date) {
+  const [year, month, day] = date.split("-").map(Number);
+  const value = new Date(Date.UTC(year, month - 1, day));
+  value.setUTCDate(value.getUTCDate() + 1);
+  return value.toISOString().slice(0, 10);
+}
+
+function resetExercises(exercises) {
+  return exercises.map(exercise => ({
+    ...exercise,
+    sets: (exercise.sets ?? []).map(set => ({ ...set, completed: false }))
+  }));
 }
 
 function round(value) {

@@ -21,6 +21,8 @@ export type TrendPoint = {
 
 export function summarizeRecord(record: DailyRecord): HistorySummary;
 export function addHistoryRecord(history: HistorySummary[], record: DailyRecord): HistorySummary[];
+export function createNextDayRecord(record: DailyRecord): DailyRecord;
+export function restoreHistoryRecord(summary: HistorySummary, currentRecord: DailyRecord): DailyRecord;
 export function trendFromHistory(history: HistorySummary[]): {
   weight: TrendPoint[];
   calories: TrendPoint[];

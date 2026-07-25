@@ -155,6 +155,15 @@ h1, h2, h3, p { margin: 0; }
   outline: 0;
 }
 .textarea { min-height: 96px; resize: vertical; line-height: 1.55; }
+.date-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 11px 12px;
+  color: var(--ink);
+  font-weight: 850;
+  background: #fff;
+}
 
 .bar { overflow: hidden; height: 10px; border-radius: 999px; background: #e9edf4; }
 .bar i { display: block; height: 100%; border-radius: inherit; background: var(--ink); }
@@ -325,10 +334,12 @@ h1, h2, h3, p { margin: 0; }
 .history-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 10px;
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 10px;
+  text-align: left;
   color: var(--muted);
   font-size: 12px;
   font-weight: 850;

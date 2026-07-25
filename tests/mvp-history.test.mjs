@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { addHistoryRecord, summarizeRecord, trendFromHistory } from "../mvp/lib/history.mjs";
+import { addHistoryRecord, createNextDayRecord, restoreHistoryRecord, summarizeRecord, trendFromHistory } from "../mvp/lib/history.mjs";
 
 const baseRecord = {
   date: "2026-07-20",
@@ -45,5 +45,18 @@ const trend = trendFromHistory(replaced);
 assert.equal(trend.weight.at(-1).value, 75.8);
 assert.equal(trend.calories.at(-1).value, 757);
 assert.equal(trend.volume.at(-1).value, 800);
+
+const nextDay = createNextDayRecord(baseRecord);
+assert.equal(nextDay.date, "2026-07-21");
+assert.equal(nextDay.meals.length, 0);
+assert.equal(nextDay.exercises.length, baseRecord.exercises.length);
+assert.equal(nextDay.exercises.flatMap(exercise => exercise.sets).every(set => !set.completed), true);
+assert.equal(nextDay.weightKg, baseRecord.weightKg);
+
+const restored = restoreHistoryRecord(history.at(-1), baseRecord);
+assert.equal(restored.date, "2026-07-20");
+assert.equal(restored.weightKg, 76);
+assert.equal(restored.meals.length, 0);
+assert.equal(restored.exercises.length, baseRecord.exercises.length);
 
 console.log("mvp history checks passed");

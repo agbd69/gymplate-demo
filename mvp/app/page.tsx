@@ -7,7 +7,7 @@ import { defaultPlanSettings, defaultProfile, defaultRecord, defaultTemplates } 
 import { loadStoredState, saveStoredState, type StorageStatus } from "@/lib/app-storage";
 import { getAuthState, initialAuthState, listenForAuthChanges, sendMagicLink, signOut, type AuthState } from "@/lib/auth";
 import { makeProfileMetrics, makeWeeklyPlan } from "@/lib/planner.mjs";
-import { addHistoryRecord, trendFromHistory, type HistorySummary } from "@/lib/history.mjs";
+import { addHistoryRecord, createNextDayRecord, restoreHistoryRecord, trendFromHistory, type HistorySummary } from "@/lib/history.mjs";
 
 const slots: Array<{ id: MealSlot; label: string }> = [
   { id: "breakfast", label: "早餐" },
@@ -261,6 +261,15 @@ export default function HomePage() {
     setHistory(current => addHistoryRecord(current, record));
   }
 
+  function settleAndStartNextDay() {
+    setHistory(current => addHistoryRecord(current, record));
+    setRecord(current => createNextDayRecord(current));
+  }
+
+  function restoreHistory(summary: HistorySummary) {
+    setRecord(current => restoreHistoryRecord(summary, current));
+  }
+
   return (
     <main className="phone-shell">
       <header className="topbar">
@@ -476,7 +485,11 @@ export default function HomePage() {
               <h2>{record.date}</h2>
               <p>记录完整度：饮食 {record.meals.length ? "已填" : "未填"} · 训练 {completedSets.length ? "已练" : "未练"}</p>
             </div>
-            <button className="btn dark" onClick={settleToday}>保存今日到历史</button>
+            <input className="date-input" type="date" value={record.date} onChange={event => setRecord(current => ({ ...current, date: event.target.value }))} />
+            <div className="action-row">
+              <button className="btn dark" onClick={settleToday}>保存今日到历史</button>
+              <button className="btn soft" onClick={settleAndStartNextDay}>保存并开启下一天</button>
+            </div>
           </article>
 
           <article className="card stack">
@@ -543,10 +556,10 @@ export default function HomePage() {
             <Trend label="训练容量" points={trend.volume} unit="kg" />
             <div className="history-list">
               {history.slice(-5).reverse().map(item => (
-                <div className="history-row" key={item.date}>
+                <button className="history-row" key={item.date} onClick={() => restoreHistory(item)}>
                   <strong>{item.date}</strong>
                   <span>{item.weightKg}kg · {item.calories}kcal · {Math.round(item.volume / 100) / 10}t</span>
-                </div>
+                </button>
               ))}
               {!history.length && <p className="hint">保存今日后，这里会显示体重、热量和训练容量趋势。</p>}
             </div>
