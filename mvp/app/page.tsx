@@ -202,8 +202,23 @@ export default function HomePage() {
   }
 
   function addTemplate(template: MealTemplate) {
-    const entries = template.entries.map(entry => ({ ...entry, id: crypto.randomUUID(), source: "user-template" as const }));
+    const entries = cloneTemplateEntries(template);
     setRecord(current => ({ ...current, meals: [...current.meals, ...entries] }));
+  }
+
+  function applyDailyMealDefaults() {
+    const defaults = slots.flatMap(({ id }) => {
+      const template = templates.find(item => item.slot === id);
+      return template ? cloneTemplateEntries(template) : [];
+    });
+    if (!defaults.length) return;
+    setRecord(current => ({
+      ...current,
+      meals: [
+        ...current.meals.filter(meal => meal.source !== "user-template" || !meal.id.includes("templateApplied")),
+        ...defaults
+      ]
+    }));
   }
 
   function deleteTemplate(templateId: string) {
@@ -569,6 +584,7 @@ export default function HomePage() {
                 <span className="label">常用餐</span>
                 <h2>每天重复的饭，点一次加入</h2>
               </div>
+              <button className="btn dark" onClick={applyDailyMealDefaults}>生成今日默认餐盘</button>
             </div>
             <div className="slot-tabs">
               {slots.map(item => (
@@ -808,6 +824,14 @@ function resequenceSets(sets: WorkoutSet[]): WorkoutSet[] {
 function recalcMeal(entry: MealEntry, patch: Partial<MealEntry>, id: string): MealEntry {
   if (entry.id !== id) return entry;
   return { ...entry, ...patch };
+}
+
+function cloneTemplateEntries(template: MealTemplate): MealEntry[] {
+  return template.entries.map((entry, index) => ({
+    ...entry,
+    id: `templateApplied-${template.id}-${crypto.randomUUID()}-${index}`,
+    source: "user-template" as const
+  }));
 }
 
 function progress(value: number, target: number): string {
