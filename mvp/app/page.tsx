@@ -141,6 +141,28 @@ export default function HomePage() {
     setRecord(current => ({ ...current, meals: [...current.meals, ...entries] }));
   }
 
+  function deleteTemplate(templateId: string) {
+    setTemplates(current => current.filter(template => template.id !== templateId));
+  }
+
+  function addManualPendingMeal() {
+    setPending(current => [
+      ...current,
+      {
+        id: crypto.randomUUID(),
+        slot,
+        foodName: "自定义食物",
+        grams: 100,
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        source: "manual",
+        macroEdited: true
+      }
+    ]);
+  }
+
   function saveCurrentSlotAsTemplate(activeSlot: MealSlot) {
     const entries = record.meals.filter(meal => meal.slot === activeSlot);
     if (!entries.length) return;
@@ -349,7 +371,10 @@ export default function HomePage() {
               {slots.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
             </select>
             <textarea className="textarea" value={mealText} onChange={event => setMealText(event.target.value)} placeholder="例如：午餐250克米饭150克鸡胸肉，或者 两个鸡蛋一杯牛奶" />
-            <button className="btn primary" onClick={parseMeal} disabled={parsing}>{parsing ? "正在解析" : "生成待确认"}</button>
+            <div className="action-row">
+              <button className="btn primary" onClick={parseMeal} disabled={parsing}>{parsing ? "正在解析" : "生成待确认"}</button>
+              <button className="btn soft" onClick={addManualPendingMeal}>手动补一条</button>
+            </div>
             {parseError && <p className="hint">{parseError}</p>}
             {pending.length > 0 && (
               <div className="stack">
@@ -386,10 +411,14 @@ export default function HomePage() {
               {templates.filter(template => template.slot === selectedTemplateSlot).map(template => {
                 const total = totalMacros(template.entries);
                 return (
-                  <button className="template-card" key={template.id} onClick={() => addTemplate(template)}>
+                  <div className="template-card" key={template.id}>
                     <strong>{template.name}</strong>
                     <p>{total.calories} kcal · P {total.protein} / C {total.carbs} / F {total.fat}</p>
-                  </button>
+                    <div className="action-row compact">
+                      <button className="btn primary" onClick={() => addTemplate(template)}>加入今天</button>
+                      <button className="btn soft" onClick={() => deleteTemplate(template.id)}>删除</button>
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -499,7 +528,7 @@ function EditableMealRow({ entry, onChange, onDelete }: { entry: MealEntry; onCh
   return (
     <div className="meal-card">
       <div className="meal-title">
-        <strong>{entry.foodName}</strong>
+        <input aria-label="食物名称" value={entry.foodName} onChange={event => onChange({ foodName: event.target.value })} />
         <button className="delete-link" onClick={onDelete}>删除</button>
       </div>
       <p>{entry.source === "user-template" ? "来自常用餐" : entry.source === "ai-estimate" ? "估算值，可改" : "按基础食物库估算"}</p>

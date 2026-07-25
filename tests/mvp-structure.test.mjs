@@ -39,6 +39,8 @@ assert(schema.includes("auth.uid() = user_id"), "schema should scope user data t
 
 assert(page.includes('useState<"training" | "food" | "data">'), "page should expose three primary tabs");
 assert(page.includes("确认加入今天"), "food entries should require explicit confirmation");
+assert(page.includes("addManualPendingMeal"), "food page should support manual pending meal entries");
+assert(page.includes("foodName"), "meal editor should support editing food names");
 assert(page.includes("loadStoredState"), "page should load through the storage adapter");
 assert(page.includes("saveStoredState"), "page should save through the storage adapter");
 assert(page.includes("sync-pill"), "page should tell users whether data is local or cloud-synced");
@@ -47,6 +49,7 @@ assert(page.includes("sendMagicLink"), "page should let users request an email l
 assert(page.includes("signOut"), "page should let signed-in users sign out");
 assert(page.includes('fetch("/api/parse-meal"'), "meal parsing should go through the API route before falling back");
 assert(page.includes("保存这一餐为常用餐"), "food page should let users save repeated meals");
+assert(page.includes("deleteTemplate"), "food page should let users delete repeated meals");
 assert(page.includes("addSet("), "training page should support adding sets");
 assert(page.includes("deleteSet("), "training page should support deleting sets");
 assert(page.includes("身体日志"), "data page should include editable body log inputs");
