@@ -47,6 +47,7 @@ pnpm run seed:open-data
 - API 路由：`/api/parse-meal`，没有 `OPENAI_API_KEY` 时返回规则解析 fallback
 - 持久化：默认本地保存；配置 Supabase 且用户已登录后同步到云端 `app_snapshots`
 - 登录入口：Supabase 邮箱 Magic Link 登录/退出，登录状态变化后自动重新拉取云端状态
+- 移动端安装：包含 PWA manifest 和 iOS 主屏幕元数据，可添加到手机主屏幕体验
 
 ## 验证
 

@@ -4,11 +4,13 @@ import { readFile } from "node:fs/promises";
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
 
-const [pkg, schema, seed, page, searchRoute, exerciseRoute, storage, auth, planner, history, foodSearch, exerciseSearch, nutrition, types, vercel, deployment] = await Promise.all([
+const [pkg, schema, seed, page, layout, manifest, searchRoute, exerciseRoute, storage, auth, planner, history, foodSearch, exerciseSearch, nutrition, types, vercel, deployment] = await Promise.all([
   read("mvp/package.json"),
   read("mvp/supabase/schema.sql"),
   read("mvp/supabase/seed-open-data.sql"),
   read("mvp/app/page.tsx"),
+  read("mvp/app/layout.tsx"),
+  read("mvp/app/manifest.ts"),
   read("mvp/app/api/search-food/route.ts"),
   read("mvp/app/api/search-exercise/route.ts"),
   read("mvp/lib/app-storage.ts"),
@@ -105,5 +107,9 @@ assert(vercel.includes('"framework": "nextjs"'), "Vercel config should target Ne
 assert(vercel.includes("pnpm run build"), "Vercel config should build the MVP");
 assert(deployment.includes("Root Directory: `mvp`"), "deployment docs should explain the Vercel root directory");
 assert(deployment.includes("Supabase Auth"), "deployment docs should explain auth redirect setup");
+assert(layout.includes("appleWebApp"), "layout metadata should support adding the MVP to iOS home screen");
+assert(layout.includes("themeColor"), "layout should define a mobile browser theme color");
+assert(manifest.includes("display: \"standalone\""), "manifest should make the MVP installable");
+assert(manifest.includes("GymPlate"), "manifest should use the product name");
 
 console.log("mvp-structure tests passed");
